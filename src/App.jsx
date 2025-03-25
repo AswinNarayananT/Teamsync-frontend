@@ -1,19 +1,43 @@
-import { useState } from 'react'
-import Home from './pages/Home'
-import { LandingPage } from './pages/Demo'
-import Login from './pages/Login'
-import './App.css'
+import { Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Login from "./pages/Login";
+import OtpVerify from "./pages/OtpVerify";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import "./App.css";
+import MainDashboard from "./pages/Maindash";
+import AdminPanel from "./pages/AdminPanel";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoutes";
+import UserPanel from "./pages/UserPanel";
+import CreateWorkspace from "./pages/CreateWorkspace";
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
-    {/* <Home/>  */}
-    {/* <LandingPage/> */}
-    <Login/>
+      <ToastContainer position="top-right" autoClose={3000} />
+      <Routes>
+        {/* Public Routes (Users NOT logged in) */}
+        <Route element={<PublicRoute />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/otp-verify" element={<OtpVerify />} />
+        </Route>
+
+        {/* Protected Routes (Authenticated Users) */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<UserPanel />} />
+          <Route path="/create-workspace" element={<CreateWorkspace />} />
+        </Route>
+
+        {/* Admin Protected Routes */}
+        <Route element={<ProtectedAdminRoute />}>
+          <Route path="/adminpanel" element={<AdminPanel />} />
+        </Route>
+      </Routes>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
