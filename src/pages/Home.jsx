@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
+    const navigate =useNavigate()
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const toggleMenu = () => {
@@ -14,7 +16,7 @@ const Home = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <span className="text-xl font-bold text-gray-900">TeamSync</span>
+                            <span className="text-xl font-bold text-gray-900">TEAM LINK</span>
                         </div>
                         
                         {/* Desktop Navigation */}
@@ -22,7 +24,7 @@ const Home = () => {
                             <a href="#features" className="text-gray-600 hover:text-gray-900">Features</a>
                             <a href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</a>
                             <a href="#contact" className="text-gray-600 hover:text-gray-900">Contact</a>
-                            <button className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition">
+                            <button onClick={() => navigate("/login")}  className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition">
                                 Sign In
                             </button>
                         </div>
@@ -97,7 +99,7 @@ const Home = () => {
                         Empower your team with our intuitive project management platform.
                         Collaborate seamlessly, track progress effortlessly, and deliver results consistently.
                     </p>
-                    <button className="mt-6 px-5 py-2.5 md:px-6 md:py-3 bg-black text-white font-medium rounded-lg shadow-md hover:bg-gray-800 transition">
+                    <button onClick={() => navigate("/login")}  className="mt-6 px-5 py-2.5 md:px-6 md:py-3 bg-black text-white font-medium rounded-lg shadow-md hover:bg-gray-800 transition">
                         Get Started
                     </button>
                 </div>
@@ -134,23 +136,23 @@ const Home = () => {
                         <div className="bg-white p-6 rounded-lg shadow-md w-full sm:w-72 border">
                             <h3 className="text-lg font-semibold">Basic</h3>
                             <p className="text-gray-600">$9/month - Perfect for small teams</p>
-                            <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
+                            {/* <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
                                 Start Free Trial
-                            </button>
+                            </button> */}
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow-md w-full sm:w-72 border border-black">
                             <h3 className="text-lg font-semibold">Professional</h3>
                             <p className="text-gray-600">$19/month - For growing teams</p>
-                            <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
+                            {/* <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
                                 Start Free Trial
-                            </button>
+                            </button> */}
                         </div>
                         <div className="bg-white p-6 rounded-lg shadow-md w-full sm:w-72 border">
                             <h3 className="text-lg font-semibold">Enterprise</h3>
                             <p className="text-gray-600">Custom Pricing - For large organizations</p>
-                            <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
+                            {/* <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
                                 Contact Sales
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>

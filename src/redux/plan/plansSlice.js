@@ -13,7 +13,7 @@ const plansSlice = createSlice({
     setPlans: (state, action) => {
       state.plans = action.payload;
       state.loading = false;
-      state.error = null;  // ✅ Clear error on success
+      state.error = null;  
     },
     addPlan: (state, action) => {
       state.plans.push(action.payload);
@@ -38,7 +38,7 @@ const plansSlice = createSlice({
     },
     setError: (state, action) => {
       state.error = action.payload;
-      state.loading = false;  // ✅ Stop loading on error
+      state.loading = false; 
     },
   },
 });

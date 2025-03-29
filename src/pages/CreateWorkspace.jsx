@@ -35,8 +35,8 @@ const CreateWorkspace = () => {
       dispatch(fetchUserWorkspaces());
     }
   }, [dispatch, workspaces.length, loading]);
+
   useEffect(() => {
-    console.log(workspaces)
     if (workspaces.length > 0) {
       const ownerWorkspace = workspaces.find((ws) => ws.role === "owner");
       if (ownerWorkspace) {
@@ -44,9 +44,10 @@ const CreateWorkspace = () => {
       }
     }
   }, [loading, workspaces, navigate]);
+  
 
   useEffect(() => {
-    dispatch(fetchPlans()); // Fetch available plans on mount
+    dispatch(fetchPlans());
   }, [dispatch]);
 
   const handleChange = (e) => {

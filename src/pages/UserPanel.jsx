@@ -12,21 +12,18 @@ const UserPanel = () => {
   const navigate = useNavigate();
   const { workspaces, loading, currentWorkspace } = useSelector((state) => state.workspace);
 
-  // ✅ Fetch workspaces on mount
+ 
   useEffect(() => {
-    console.log("📡 Fetching user workspaces...");
     dispatch(fetchUserWorkspaces());
   }, [dispatch]);
 
-  // ✅ Redirect based on workspace availability once loading is false
+
   useEffect(() => {
 
     if (!loading) {
       if (workspaces.length > 0 && currentWorkspace) {
-        console.log("✅ Workspaces found. Redirecting to dashboard...");
         navigate("/dashboard");
       } else {
-        console.warn("⚠️ No workspaces found. Redirecting to create workspace...");
         navigate("/create-workspace");
       }
     }

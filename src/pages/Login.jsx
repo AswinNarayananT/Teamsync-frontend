@@ -32,7 +32,6 @@ export default function AuthPage() {
     flow: "implicit",
   });
 
-  // Validation Schema
   const validationSchema = Yup.object({
     first_name: isLogin
       ? Yup.string().notRequired()

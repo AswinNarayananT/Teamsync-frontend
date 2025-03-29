@@ -18,11 +18,13 @@ const DashboardTitle = ({ role }) => {
           <div className="flex flex-col items-center">
             <span className="text-gray-400 text-xs">Workspace</span>
             <div className="p-1 ">
-              <Dropdown
-                options={workspaces}
-                selected={currentWorkspace || workspaces[0]}
-                setSelected={(selected) => dispatch(setCurrentWorkspace(selected))}
-              />
+            {workspaces.length > 0 && (
+                <Dropdown
+                  options={workspaces}
+                  selected={currentWorkspace || workspaces[0]}
+                  setSelected={(selected) => dispatch(setCurrentWorkspace(selected))}
+                />
+              )}
             </div>
           </div>
         </div>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useSelector, useDispatch } from "react-redux";
 
 const Dropdown = ({ label, options, selected, setSelected }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -21,7 +21,7 @@ const Dropdown = ({ label, options, selected, setSelected }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="text-white text-sm font-semibold flex items-center justify-between w-full px-4 py-1.5 bg-[#1E1E24] rounded-md border border-gray-600"
       >
-        <span className="overflow-hidden text-ellipsis whitespace-nowrap">{selected.name}</span>
+        <span className="overflow-hidden text-ellipsis whitespace-nowrap">{selected.name }</span>
         <span>⏷</span>
       </button>
 

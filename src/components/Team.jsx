@@ -6,34 +6,34 @@ const MAX_INVITES = 6;
 const Team = () => {
   const { currentWorkspace } = useSelector((state) => state.workspace);
 
-  // Each invite is an object: { email, fullName, role }
+
   const [invites, setInvites] = useState([
     { email: "", fullName: "", role: "" },
   ]);
 
-  // Add a new row if under the limit
+
   const handleAddRow = () => {
     if (invites.length >= MAX_INVITES) return;
     setInvites([...invites, { email: "", fullName: "", role: "" }]);
   };
 
-  // Remove a row by index
+
   const handleRemoveRow = (index) => {
     const updated = [...invites];
     updated.splice(index, 1);
     setInvites(updated);
   };
 
-  // Update a field (email, fullName, role) in a given row
+
   const handleChange = (index, field, value) => {
     const updated = [...invites];
     updated[index][field] = value;
     setInvites(updated);
   };
 
-  // Example of sending invitation (dummy)
+
   const handleSendInvitation = () => {
-    // Validate each invite row
+
     for (let i = 0; i < invites.length; i++) {
       const { email, fullName, role } = invites[i];
       if (!email || !fullName || !role) {
@@ -41,7 +41,7 @@ const Team = () => {
         return;
       }
     }
-    // If all are valid, show an alert (or call an API)
+
     const invitesSummary = invites.map(
       (inv, idx) => `${idx + 1}. ${inv.email} / ${inv.fullName} / ${inv.role}`
     );
@@ -50,7 +50,6 @@ const Team = () => {
         currentWorkspace?.name || "N/A"
       }`
     );
-    // Optionally reset
     setInvites([{ email: "", fullName: "", role: "" }]);
   };
 

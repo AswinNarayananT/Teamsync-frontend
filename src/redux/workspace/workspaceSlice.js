@@ -3,7 +3,7 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   workspaces: [],  
   currentWorkspace: null,  
-  loading: true,  // Start in loading state
+  loading: true,  
   error: null,
 };
 
@@ -17,12 +17,11 @@ const workspaceSlice = createSlice({
       state.loading = false;
     },
     setCurrentWorkspace: (state, action) => {
-      console.log("🔄 Setting Current Workspace:", action.payload);
       const workspaceExists = state.workspaces.some(ws => ws.id === action.payload?.id);
       if (workspaceExists) {
         state.currentWorkspace = action.payload;
       } else {
-        console.warn("⚠️ Selected workspace not found in list. Keeping current workspace.");
+        console.log("Selected workspace not found in list. Keeping current workspace.");
       }
     },
     setLoading: (state, action) => {
