@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchPlans, createPlan, editPlan, removePlan } from "../redux/plan/plansActions";
+import { fetchPlans, createPlan, editPlan, removePlan } from "../redux/plan/plansThunks";
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button } from "@mui/material";
+import { toast } from "react-toastify";
 
 const Plans = () => {
   const dispatch = useDispatch();
@@ -10,13 +11,15 @@ const Plans = () => {
   const [formData, setFormData] = useState({ name: "", description: "", price: "", duration_days: 30 });
   const [editMode, setEditMode] = useState(false);
   const [editingPlanId, setEditingPlanId] = useState(null);
-  const [deletePlanId, setDeletePlanId] = useState(null); // ✅ Store the plan ID to delete
-  const [openConfirm, setOpenConfirm] = useState(false); // ✅ Control delete confirmation dialog
+  const [deletePlanId, setDeletePlanId] = useState(null);
+  const [openConfirm, setOpenConfirm] = useState(false);
 
-  // ✅ Fetch Plans on Load
+  // ✅ Fetch Plans on Mount (if not already loaded)
   useEffect(() => {
-    dispatch(fetchPlans());
-  }, [dispatch]);
+    if (plans.length === 0) {
+      dispatch(fetchPlans());
+    }
+  }, [dispatch, plans.length]);
 
   // ✅ Handle Form Input Change
   const handleChange = (e) => {
@@ -24,15 +27,21 @@ const Plans = () => {
   };
 
   // ✅ Handle Create / Edit Plan Submission
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editMode) {
-      dispatch(editPlan(editingPlanId, formData));
-    } else {
-      dispatch(createPlan(formData));
+    try {
+      if (editMode) {
+        await dispatch(editPlan({ planId: editingPlanId, updatedData: formData })).unwrap();
+        toast.success("Plan updated successfully!");
+      } else {
+        await dispatch(createPlan(formData)).unwrap();
+        toast.success("Plan created successfully!");
+      }
+      setShowModal(false);
+      resetForm();
+    } catch (err) {
+      toast.error(err || "An error occurred.");
     }
-    setShowModal(false);
-    resetForm();
   };
 
   // ✅ Handle Edit Plan
@@ -49,9 +58,14 @@ const Plans = () => {
     setOpenConfirm(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletePlanId) {
-      dispatch(removePlan(deletePlanId));
+      try {
+        await dispatch(removePlan(deletePlanId)).unwrap();
+        toast.success("Plan deleted successfully!");
+      } catch (err) {
+        toast.error(err || "Failed to delete plan.");
+      }
       setOpenConfirm(false);
     }
   };
@@ -107,8 +121,8 @@ const Plans = () => {
                     <button className="text-blue-400 mr-2" onClick={() => handleEdit(plan)}>
                       Edit
                     </button>
-                    <button className="text-red-400" onClick={() => confirmDelete(plan.id)}>
-                      Delete
+                    <button className="text-red-400" onClick={() => confirmDelete(plan.id)} disabled={loading}>
+                      {loading ? "Deleting..." : "Delete"}
                     </button>
                   </td>
                 </tr>
@@ -124,37 +138,10 @@ const Plans = () => {
           <div className="bg-[#1e1e24] p-6 rounded-lg w-96">
             <h2 className="text-xl font-bold mb-4">{editMode ? "Edit Plan" : "Create New Plan"}</h2>
             <form onSubmit={handleSubmit}>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Plan Name"
-                required
-                className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md"
-              />
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Description"
-                className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md"
-              />
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                placeholder="Price ($)"
-                required
-                className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md"
-              />
-              <select
-                name="duration_days"
-                value={formData.duration_days}
-                onChange={handleChange}
-                className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md"
-              >
+              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Plan Name" required className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md" />
+              <textarea name="description" value={formData.description} onChange={handleChange} placeholder="Description" className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md" />
+              <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="Price ($)" required className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md" />
+              <select name="duration_days" value={formData.duration_days} onChange={handleChange} className="w-full p-2 mb-3 bg-gray-800 text-white rounded-md">
                 <option value={30}>Monthly (30 days)</option>
                 <option value={90}>Quarterly (90 days)</option>
                 <option value={180}>Semi-Annual (180 days)</option>
@@ -173,16 +160,14 @@ const Plans = () => {
         </div>
       )}
 
-      {/* ✅ Material UI Delete Confirmation Dialog */}
+      {/* ✅ Delete Confirmation Dialog */}
       <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
         <DialogTitle>Delete Plan</DialogTitle>
         <DialogContent>
           <p>Are you sure you want to delete this plan?</p>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenConfirm(false)} color="primary">
-            Cancel
-          </Button>
+          <Button onClick={() => setOpenConfirm(false)}>Cancel</Button>
           <Button onClick={handleDelete} color="error">
             Delete
           </Button>

@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { fetchPlans, createPlan, editPlan, removePlan } from "./plansThunks";
 
 const initialState = {
   plans: [],
@@ -9,39 +10,60 @@ const initialState = {
 const plansSlice = createSlice({
   name: "plans",
   initialState,
-  reducers: {
-    setPlans: (state, action) => {
-      state.plans = action.payload;
-      state.loading = false;
-      state.error = null;  
-    },
-    addPlan: (state, action) => {
-      state.plans.push(action.payload);
-      state.loading = false;
-      state.error = null;
-    },
-    updatePlan: (state, action) => {
-      const index = state.plans.findIndex((plan) => plan.id === action.payload.id);
-      if (index !== -1) {
-        state.plans[index] = action.payload;
-      }
-      state.loading = false;
-      state.error = null;
-    },
-    deletePlan: (state, action) => {
-      state.plans = state.plans.filter((plan) => plan.id !== action.payload);
-      state.loading = false;
-      state.error = null;
-    },
-    setLoading: (state, action) => {
-      state.loading = action.payload;
-    },
-    setError: (state, action) => {
-      state.error = action.payload;
-      state.loading = false; 
-    },
+  reducers: {}, // No need for manual reducers; handled via extraReducers
+  extraReducers: (builder) => {
+    builder
+      // 🔹 Fetch Plans
+      .addCase(fetchPlans.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchPlans.fulfilled, (state, action) => {
+        state.loading = false;
+        state.plans = action.payload;
+      })
+      .addCase(fetchPlans.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Create Plan
+      .addCase(createPlan.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(createPlan.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(createPlan.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Edit Plan
+      .addCase(editPlan.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(editPlan.fulfilled, (state, action) => {
+        state.loading = false;
+      })
+      .addCase(editPlan.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // 🔹 Remove Plan
+      .addCase(removePlan.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(removePlan.fulfilled, (state, action) => {
+        state.loading = false;
+        state.plans = state.plans.filter((plan) => plan.id !== action.payload);
+      })
+      .addCase(removePlan.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
   },
 });
 
-export const { setPlans, addPlan, updatePlan, deletePlan, setLoading, setError } = plansSlice.actions;
 export default plansSlice.reducer;

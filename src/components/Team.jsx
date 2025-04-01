@@ -1,22 +1,19 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
+import api from "../api";
+import { toast } from "react-toastify";
 
 const MAX_INVITES = 6;
 
 const Team = () => {
   const { currentWorkspace } = useSelector((state) => state.workspace);
-
-
-  const [invites, setInvites] = useState([
-    { email: "", fullName: "", role: "" },
-  ]);
-
+  const [invites, setInvites] = useState([{ email: "", fullName: "", role: "" }]);
+  const [loading, setLoading] = useState(false);
 
   const handleAddRow = () => {
     if (invites.length >= MAX_INVITES) return;
     setInvites([...invites, { email: "", fullName: "", role: "" }]);
   };
-
 
   const handleRemoveRow = (index) => {
     const updated = [...invites];
@@ -24,16 +21,13 @@ const Team = () => {
     setInvites(updated);
   };
 
-
   const handleChange = (index, field, value) => {
     const updated = [...invites];
     updated[index][field] = value;
     setInvites(updated);
   };
 
-
-  const handleSendInvitation = () => {
-
+  const handleSendInvitation = async () => {
     for (let i = 0; i < invites.length; i++) {
       const { email, fullName, role } = invites[i];
       if (!email || !fullName || !role) {
@@ -42,153 +36,91 @@ const Team = () => {
       }
     }
 
-    const invitesSummary = invites.map(
-      (inv, idx) => `${idx + 1}. ${inv.email} / ${inv.fullName} / ${inv.role}`
-    );
-    alert(
-      `Invitations sent for:\n${invitesSummary.join("\n")}\n\nWorkspace: ${
-        currentWorkspace?.name || "N/A"
-      }`
-    );
-    setInvites([{ email: "", fullName: "", role: "" }]);
+    if (!currentWorkspace) {
+      alert("No workspace selected.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log(currentWorkspace.id)
+      const response = await api.post("/api/v1/workspace/send-invites/", {
+        workspace_id: currentWorkspace.id,
+        invites,
+      });
+      toast.success("Invitations sent successfully!");
+      setInvites([{ email: "", fullName: "", role: "" }]);
+    } catch (error) {
+      toast.error("Failed to send invitations. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      {/* Breadcrumb & Title */}
       <div className="mb-6">
-        <nav className="text-sm text-gray-400 mb-2">
-          <span className="mr-2">{currentWorkspace?.name || "Workspace"}</span>
-          <span className="text-gray-600">/</span>
-          <span className="ml-2">
-            {currentWorkspace?.description || "Add Team"}
-          </span>
-        </nav>
         <h1 className="text-3xl font-bold">Add Team</h1>
       </div>
 
-      {/* Invitation Form */}
       <div className="bg-[#1E1E24] rounded-lg p-6 mb-6">
-        <p className="text-gray-400 mb-4">
-          Add up to {MAX_INVITES} members at once.
-        </p>
-
+        <p className="text-gray-400 mb-4">Add up to {MAX_INVITES} members.</p>
         {invites.map((invite, index) => (
           <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            {/* Email Address */}
-            <div className="flex flex-col">
-              <label className="text-gray-400 text-sm mb-1">Email Address</label>
-              <input
-                type="email"
-                className="bg-gray-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Enter email address"
-                value={invite.email}
-                onChange={(e) => handleChange(index, "email", e.target.value)}
-              />
-            </div>
-            {/* Full Name */}
-            <div className="flex flex-col">
-              <label className="text-gray-400 text-sm mb-1">Full Name</label>
-              <input
-                type="text"
-                className="bg-gray-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                placeholder="Enter full name"
-                value={invite.fullName}
-                onChange={(e) => handleChange(index, "fullName", e.target.value)}
-              />
-            </div>
-            {/* Role + Remove Button */}
-            <div className="flex flex-col">
-              <label className="text-gray-400 text-sm mb-1">Role</label>
-              <div className="flex space-x-2">
-                <select
-                  className="bg-gray-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 flex-1"
-                  value={invite.role}
-                  onChange={(e) => handleChange(index, "role", e.target.value)}
+            <input
+              type="email"
+              placeholder="Email"
+              value={invite.email}
+              onChange={(e) => handleChange(index, "email", e.target.value)}
+              className="bg-gray-800 rounded-md px-3 py-2"
+            />
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={invite.fullName}
+              onChange={(e) => handleChange(index, "fullName", e.target.value)}
+              className="bg-gray-800 rounded-md px-3 py-2"
+            />
+            <div className="flex space-x-2">
+              <select
+                value={invite.role}
+                onChange={(e) => handleChange(index, "role", e.target.value)}
+                className="bg-gray-800 rounded-md px-3 py-2 flex-1"
+              >
+                <option value="">Select role</option>
+                <option value="Manager">Manager</option>
+                <option value="Developer">Developer</option>
+              </select>
+              {invites.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveRow(index)}
+                  className="bg-red-600 px-3 py-2 rounded-md"
                 >
-                  <option value="">Select role</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Developer">Developer</option>
-                  <option value="Designer">Designer</option>
-                </select>
-                {/* Remove button (only if more than one row) */}
-                {invites.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveRow(index)}
-                    className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+                  Remove
+                </button>
+              )}
             </div>
           </div>
         ))}
-
-        {/* Add Another Button */}
         <div className="flex justify-end mb-4">
           <button
             type="button"
             onClick={handleAddRow}
             disabled={invites.length >= MAX_INVITES}
-            className={`bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium ${
-              invites.length >= MAX_INVITES ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+            className="bg-blue-600 px-4 py-2 rounded-md"
           >
             Add Another
           </button>
         </div>
-
-        {/* Send Invitation */}
         <div className="flex justify-end">
           <button
-            className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium"
+            className="bg-green-600 px-4 py-2 rounded-md"
             onClick={handleSendInvitation}
+            disabled={loading}
           >
-            Send Invitation
+            {loading ? "Sending..." : "Send Invitation"}
           </button>
-        </div>
-      </div>
-
-      {/* Team Members Table */}
-      <div className="bg-[#1E1E24] rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-4">Team Members</h2>
-        {/* Search & Roles Filter Row */}
-        <div className="flex flex-col md:flex-row items-center justify-between mb-4">
-          <div className="flex items-center space-x-2 mb-2 md:mb-0">
-            <input
-              type="text"
-              placeholder="Search members"
-              className="bg-gray-800 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-            />
-          </div>
-          <div>
-            <select className="bg-gray-800 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-sm">
-              <option>All Roles</option>
-              <option>Manager</option>
-              <option>Developer</option>
-              <option>Designer</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Members Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
-            <thead className="bg-gray-700">
-              <tr>
-                <th className="py-3 px-4 text-left text-gray-300 font-normal">Member</th>
-                <th className="py-3 px-4 text-left text-gray-300 font-normal">Role</th>
-                <th className="py-3 px-4 text-left text-gray-300 font-normal">Projects</th>
-                <th className="py-3 px-4 text-left text-gray-300 font-normal">Status</th>
-                <th className="py-3 px-4 text-right text-gray-300 font-normal">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* For now, this is empty. Replace with your real team data or map over an array. */}
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

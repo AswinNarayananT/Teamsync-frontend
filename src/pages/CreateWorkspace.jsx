@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { createWorkspace } from "../redux/workspace/WorkspaceActions";
-import { fetchPlans } from "../redux/plan/plansActions";
+import { fetchPlans } from "../redux/plan/plansThunks";
 import { toast } from "react-toastify";
-import { fetchUserWorkspaces } from "../redux/workspace/WorkspaceActions";
+import { createWorkspace, fetchUserWorkspaces } from "../redux/workspace/workspaceThunks";
 
 const workTypes = [
   { name: "Software Development", icon: "💻" },
@@ -18,7 +17,7 @@ const workTypes = [
 const CreateWorkspace = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { plans, loading } = useSelector((state) => state.plans); 
+  const { plans, loading } = useSelector((state) => state.plans);
   const { workspaces } = useSelector((state) => state.workspace);
 
   const [step, setStep] = useState(1);
@@ -31,12 +30,6 @@ const CreateWorkspace = () => {
   });
 
   useEffect(() => {
-    if (workspaces.length === 0) {
-      dispatch(fetchUserWorkspaces());
-    }
-  }, [dispatch, workspaces.length, loading]);
-
-  useEffect(() => {
     if (workspaces.length > 0) {
       const ownerWorkspace = workspaces.find((ws) => ws.role === "owner");
       if (ownerWorkspace) {
@@ -44,7 +37,6 @@ const CreateWorkspace = () => {
       }
     }
   }, [loading, workspaces, navigate]);
-  
 
   useEffect(() => {
     dispatch(fetchPlans());
@@ -61,15 +53,18 @@ const CreateWorkspace = () => {
 
   const handlePlanSelect = (planId) => {
     if (!planId) {
-        toast("Please select a plan");
-        return;
-      }
+      toast("Please select a plan");
+      return;
+    }
     setFormData({ ...formData, plan_id: planId });
     handleSubmit();
   };
 
   const handleSubmit = () => {
-    dispatch(createWorkspace(formData, navigate));
+    console.log(formData)
+    dispatch(createWorkspace({ workspaceData: formData, navigate })).catch((err) => {
+      toast.error(err || "Failed to create workspace");
+    });
   };
 
   const handleNext = () => {
@@ -175,50 +170,49 @@ const CreateWorkspace = () => {
 
           {/* Step 3: Select Plan */}
           {step === 3 && (
-        <div className="text-center">
-            <h2 className="text-3xl font-bold text-green-400 mb-4">Choose Your Plan</h2>
-            {loading ? (
-            <p className="text-gray-400">Loading plans...</p>
-            ) : plans.length === 0 ? (
-            <p className="text-gray-400">No plans available</p>
-            ) : (
-            <>
-                <div className="grid grid-cols-3 gap-6">
-                {plans.map((plan) => (
-                    <div
-                    key={plan.id}
-                    className={`p-6 rounded-lg cursor-pointer transition transform hover:scale-105 border-2 h-full 
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-green-400 mb-4">Choose Your Plan</h2>
+              {loading ? (
+                <p className="text-gray-400">Loading plans...</p>
+              ) : plans.length === 0 ? (
+                <p className="text-gray-400">No plans available</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-6">
+                    {plans.map((plan) => (
+                      <div
+                        key={plan.id}
+                        className={`p-6 rounded-lg cursor-pointer transition transform hover:scale-105 border-2 h-full 
                         ${
-                        formData.plan_id === plan.id
+                          formData.plan_id === plan.id
                             ? "border-green-500 bg-green-500 bg-opacity-20"
                             : "border-gray-700 bg-gray-800 hover:border-green-400"
                         }`}
-                    onClick={() => setFormData({ ...formData, plan_id: plan.id })}
+                        onClick={() => setFormData({ ...formData, plan_id: plan.id })}
+                      >
+                        <h3 className="text-xl font-bold">{plan.name}</h3>
+                        <p className="text-gray-400 my-2">{plan.description}</p>
+                        <div className="text-3xl font-bold">
+                          ${plan.price}/<span className="text-sm text-gray-400">month</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      className={`bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-white font-medium transition text-sm ${
+                        !formData.plan_id ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                      onClick={() => handlePlanSelect(formData.plan_id)}
+                      disabled={!formData.plan_id}
                     >
-                    <h3 className="text-xl font-bold">{plan.name}</h3>
-                    <p className="text-gray-400 my-2">{plan.description}</p>
-                    <div className="text-3xl font-bold">
-                        ${plan.price}/<span className="text-sm text-gray-400">month</span>
-                    </div>
-                    </div>
-                ))}
-                </div>
-                <div className="mt-6 flex justify-end">
-                <button
-                    className={`bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-white font-medium transition text-sm ${
-                    !formData.plan_id ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                    onClick={() => handlePlanSelect(formData.plan_id)}
-                    disabled={!formData.plan_id}
-                >
-                    Continue
-                </button>
-                </div>
-            </>
-            )}
+                      Continue
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-            )}
-
+          )}
         </div>
       </div>
     </div>

@@ -1,38 +1,44 @@
 import React, { useState, useEffect } from "react";
+import { fetchUserWorkspaces } from "../redux/workspace/workspaceThunks";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import Layout from "../components/Layout";
 import Dashboard from "./Dashboard";
 import Team from "../components/Team";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchUserWorkspaces } from "../redux/workspace/WorkspaceActions";
-import { useNavigate } from "react-router-dom";
+import UserSettings from "../components/UserSettings";
 
 const UserPanel = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { workspaces, loading, currentWorkspace } = useSelector((state) => state.workspace);
+  const [workspacesFetched, setWorkspacesFetched] = useState(false);
 
  
   useEffect(() => {
-    dispatch(fetchUserWorkspaces());
-  }, [dispatch]);
-
+    if (workspaces.length === 0 && !loading) {
+      console.log("it is working")
+      dispatch(fetchUserWorkspaces()).then(() => setWorkspacesFetched(true));
+    }
+  }, [dispatch, workspaces.length, loading]);
 
   useEffect(() => {
-
-    if (!loading) {
+    if (!loading && workspacesFetched) {
       if (workspaces.length > 0 && currentWorkspace) {
+        console.log("Redirecting to dashboard");
         navigate("/dashboard");
-      } else {
+      } else if (workspaces.length === 0) {
+        console.log("Redirecting to create workspace");
         navigate("/create-workspace");
       }
     }
-  }, [loading, workspaces, currentWorkspace, navigate]);
+  }, [loading, workspacesFetched, workspaces.length, currentWorkspace, navigate]);
 
   return (
     <Layout role="user" activeSection={activeSection} setActiveSection={setActiveSection}>
       {activeSection === "dashboard" && <Dashboard />}
       {activeSection === "team" && <Team />}
+      {activeSection === "settings" && <UserSettings />}
     </Layout>
   );
 };

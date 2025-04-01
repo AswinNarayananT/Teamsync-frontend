@@ -1,17 +1,11 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Navigate, Outlet } from "react-router-dom";
-import { fetchUser } from "../redux/auth/authActions";
+import { fetchUser } from "../redux/auth/authThunks";
 
 const ProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
   const { user, loading } = useSelector((state) => state.auth);
-
-  useEffect(() => {
-    if (!user) {
-      dispatch(fetchUser());
-    }
-  }, [user, dispatch]);
 
   if (loading) return <div>Loading...</div>;
 

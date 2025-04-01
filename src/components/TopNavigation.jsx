@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { logoutUser } from "../redux/auth/authActions";
+import { logoutUser } from "../redux/auth/authThunks";
 import { useNavigate } from "react-router-dom";
 import DashboardTitle from "./DashboardTitle";
 

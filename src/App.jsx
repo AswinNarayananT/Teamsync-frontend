@@ -5,13 +5,13 @@ import OtpVerify from "./pages/OtpVerify";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
-import MainDashboard from "./pages/Maindash";
 import AdminPanel from "./pages/AdminPanel";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoutes";
 import UserPanel from "./pages/UserPanel";
 import CreateWorkspace from "./pages/CreateWorkspace";
+import JoinWorkspace from "./pages/JoinWorkspace";
 
 function App() {
   return (
@@ -35,6 +35,10 @@ function App() {
         <Route element={<ProtectedAdminRoute />}>
           <Route path="/adminpanel" element={<AdminPanel />} />
         </Route>
+
+
+        
+        <Route path="/join-workspace/:token" element={<JoinWorkspace />} />
       </Routes>
     </>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { registerUser, loginUser, googleLogin } from "../redux/auth/authActions";
+import { registerUser, loginUser, googleLogin } from "../redux/auth/authThunks";
 import { FcGoogle } from "react-icons/fc";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { useNavigate } from "react-router-dom";
@@ -13,19 +13,9 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const { loading, error, user } = useSelector((state) => state.auth);
 
-  useEffect(() => {
-    if (user) {
-      if (user.is_superuser) {
-        navigate("/adminpanel");
-      } else {
-        navigate("/dashboard");
-      }
-    }
-  }, [user, navigate]);
-
   const handleGoogleSignIn = useGoogleLogin({
     onSuccess: (response) => {
-      dispatch(googleLogin(response.access_token, navigate));
+      dispatch(googleLogin({ googleCredential: response.access_token, navigate }));
     },
     onError: (error) => {
     },
@@ -85,7 +75,7 @@ export default function AuthPage() {
 
           {/* Form Section */}
           <div className="px-8 pb-8">
-            <Formik
+          <Formik
               initialValues={{
                 first_name: "",
                 last_name: "",
@@ -97,19 +87,20 @@ export default function AuthPage() {
               validationSchema={validationSchema}
               onSubmit={(values) => {
                 if (isLogin) {
-                  dispatch(loginUser({ email: values.email, password: values.password }, navigate));
+                  dispatch(loginUser({ credentials: values, navigate }));
+
                 } else {
                   dispatch(
-                    registerUser(
-                      {
+                    registerUser({
+                      userData: {
                         first_name: values.first_name,
                         last_name: values.last_name,
                         email: values.email,
                         phone_number: values.phone_number,
                         password: values.password,
                       },
-                      navigate
-                    )
+                      navigate,
+                    })
                   );
                 }
               }}
