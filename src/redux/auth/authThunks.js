@@ -60,6 +60,9 @@ export const loginUser = createAsyncThunk(
 
       return user;
     } catch (error) {
+      const errorMessage =
+      error.response?.data?.non_field_errors?.[0] || "An error occurred. Please try again.";
+      toast.error(errorMessage);
       return rejectWithValue(error.response?.data?.error || "Login failed");
     }
   }
@@ -137,10 +140,8 @@ export const logoutUser = createAsyncThunk(
         await api.post("/api/v1/accounts/logout/", { refresh: refreshToken });
       }
 
-      // Clear refresh token from localStorage
       localStorage.removeItem("refresh_token");
 
-      // Reset state
       dispatch(resetWorkspaceState());
 
       toast.success("Logged out successfully!");

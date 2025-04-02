@@ -11,7 +11,7 @@ const UserPanel = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { workspaces, loading, currentWorkspace } = useSelector((state) => state.workspace);
+  const { workspaces, loading } = useSelector((state) => state.workspace);
   const [workspacesFetched, setWorkspacesFetched] = useState(false);
 
  
@@ -24,7 +24,7 @@ const UserPanel = () => {
 
   useEffect(() => {
     if (!loading && workspacesFetched) {
-      if (workspaces.length > 0 && currentWorkspace) {
+      if (workspaces.length > 0) {
         console.log("Redirecting to dashboard");
         navigate("/dashboard");
       } else if (workspaces.length === 0) {
@@ -32,7 +32,7 @@ const UserPanel = () => {
         navigate("/create-workspace");
       }
     }
-  }, [loading, workspacesFetched, workspaces.length, currentWorkspace, navigate]);
+  }, [loading, workspacesFetched, workspaces.length, navigate]);
 
   return (
     <Layout role="user" activeSection={activeSection} setActiveSection={setActiveSection}>

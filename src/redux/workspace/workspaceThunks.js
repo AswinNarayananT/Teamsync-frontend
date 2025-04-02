@@ -1,4 +1,7 @@
-import { createAsyncThunk } from "@reduxjs/toolkit";
+import { createAsyncThunk, createAction } from "@reduxjs/toolkit";
+import { setCurrentWorkspace } from "../currentworkspace/currentWorkspaceThunk";
+
+
 import api from "../../api";
 import { loadStripe } from "@stripe/stripe-js";
 
@@ -7,15 +10,32 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 /** 🔹 Fetch User Workspaces */
 export const fetchUserWorkspaces = createAsyncThunk(
   "workspace/fetchUserWorkspaces",
-  async (_, { rejectWithValue }) => {
+  async (_, { dispatch, rejectWithValue }) => {
     try {
       const response = await api.get("/api/v1/workspace/list/");
-
       const workspaces = Array.isArray(response.data) ? response.data : response.data.workspaces || [];
+      if (workspaces.length > 0) {
+        dispatch(setCurrentWorkspace(workspaces[0]));
+      }
       return workspaces;
     } catch (error) {
       console.error("❌ Failed to Fetch Workspaces:", error.response?.data);
       return rejectWithValue(error.response?.data?.error || "Failed to fetch workspaces");
+    }
+  }
+);
+
+
+
+
+export const fetchWorkspaceMembers = createAsyncThunk(
+  "workspace/fetchMembers",
+  async (workspaceId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/workspaces/${workspaceId}/members/`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Failed to fetch members");
     }
   }
 );
@@ -28,13 +48,13 @@ export const createWorkspace = createAsyncThunk(
       console.log("🔍 Sending Workspace Data:", workspaceData);
       const response = await api.post("/api/v1/workspace/create/", workspaceData);
 
-      console.log("✅ Workspace Created:", response.data);
+      console.log("Workspace Created:", response.data);
 
       if (response.data.redirect_url) {
-        console.log("🚀 Redirecting to Stripe Checkout:", response.data.redirect_url);
+        console.log("Redirecting to Stripe Checkout:", response.data.redirect_url);
         const stripe = await stripePromise;
         if (!stripe) {
-          console.error("❌ Stripe failed to initialize.");
+          console.error("Stripe failed to initialize.");
           return rejectWithValue("Stripe Checkout failed.");
         }
 
@@ -43,17 +63,17 @@ export const createWorkspace = createAsyncThunk(
         });
 
         if (error) {
-          console.error("🚨 Stripe Checkout Error:", error);
+          console.error("Stripe Checkout Error:", error);
           return rejectWithValue("Stripe Checkout failed.");
         }
       } else {
-        dispatch(fetchUserWorkspaces()); // ✅ Refetch workspaces
+        dispatch(fetchUserWorkspaces()); 
         navigate("/dashboard");
       }
 
       return response.data;
     } catch (error) {
-      console.error("❌ Workspace Creation Failed:", error.response?.data);
+      console.error("Workspace Creation Failed:", error.response?.data);
       return rejectWithValue(error.response?.data?.error || "Failed to create workspace");
     }
   }

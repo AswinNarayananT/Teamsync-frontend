@@ -1,9 +1,8 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchUserWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, switchWorkspace, resetWorkspaceState } from "./workspaceThunks";
+import { fetchUserWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace,  resetWorkspaceState } from "./workspaceThunks";
 
 const initialState = {
   workspaces: [],
-  currentWorkspace: null,
   loading: false,
   error: null,
 };
@@ -11,7 +10,7 @@ const initialState = {
 const workspaceSlice = createSlice({
   name: "workspace",
   initialState,
-  reducers: {}, // ✅ No need for manual reducers; handled via extraReducers
+  reducers: {}, 
   extraReducers: (builder) => {
     builder
       // 🔹 Fetch Workspaces
@@ -22,7 +21,6 @@ const workspaceSlice = createSlice({
       .addCase(fetchUserWorkspaces.fulfilled, (state, action) => {
         state.loading = false;
         state.workspaces = action.payload;
-        state.currentWorkspace = action.payload.length > 0 ? action.payload[0] : null;
       })
       .addCase(fetchUserWorkspaces.rejected, (state, action) => {
         state.loading = false;
@@ -60,25 +58,15 @@ const workspaceSlice = createSlice({
       .addCase(deleteWorkspace.fulfilled, (state, action) => {
         state.loading = false;
         state.workspaces = state.workspaces.filter((ws) => ws.id !== action.payload);
-        state.currentWorkspace = state.workspaces.length > 0 ? state.workspaces[0] : null;
       })
       .addCase(deleteWorkspace.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      // 🔹 Switch Workspace
-      .addCase(switchWorkspace.fulfilled, (state, action) => {
-        state.currentWorkspace = action.payload;
-      })
-      .addCase(switchWorkspace.rejected, (state, action) => {
-        state.error = action.payload;
-      })
-
       // 🔹 Handle Reset on Logout
       .addCase(resetWorkspaceState.fulfilled, (state) => {
         state.workspaces = [];
-        state.currentWorkspace = null;
       });
   },
 });

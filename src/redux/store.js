@@ -4,6 +4,7 @@ import { persistReducer, persistStore } from "redux-persist";
 import authReducer from "./auth/authSlice";
 import plansReducer from "./plan/plansSlice";
 import workspaceReducer from "./workspace/workspaceSlice";
+import currentWorkspaceReducer from "./currentworkspace/currentWorkspaceSlice"; 
 import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from "redux-persist";
 
 
@@ -16,17 +17,28 @@ const authPersistConfig = {
 const workspacePersistConfig = {
   key: "workspace",
   storage,
-  whitelist: ["workspaces", "currentWorkspace"],
+  whitelist: ["workspaces"],
+};
+
+const currentWorkspacePersistConfig = {
+  key: "currentWorkspace",
+  storage,
+  whitelist: ["currentWorkspace","members"], 
 };
 
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 const persistedWorkspaceReducer = persistReducer(workspacePersistConfig, workspaceReducer);
+const persistedCurrentWorkspaceReducer = persistReducer(
+  currentWorkspacePersistConfig,
+  currentWorkspaceReducer
+);
 
 export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,  
     plans: plansReducer,        
     workspace: persistedWorkspaceReducer,
+    currentWorkspace: persistedCurrentWorkspaceReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
