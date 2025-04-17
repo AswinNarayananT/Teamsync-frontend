@@ -1,14 +1,26 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
   members: [],
   membersLoading: false,
   membersError: null,
+
   projects: [],
   projectsLoading: false,
   projectsError: null,
+
+  currentProject: null,
+
+  epics: [], 
+  epicsLoading: false,
+  epicsError: null,
+
+  issues: {},
+  issuesLoading: false,
+  issuesError: null,
+
 };
 
 const currentWorkspaceSlice = createSlice({
@@ -34,6 +46,14 @@ const currentWorkspaceSlice = createSlice({
       .addCase(fetchWorkspaceMembers.rejected, (state, action) => {
         state.membersLoading = false;
         state.membersError = action.payload;
+     
+      })
+
+       // 🔹 Fetch Workspace status
+      .addCase(fetchWorkspaceStatus.fulfilled, (state, action) => {
+        if (state.currentWorkspace && state.currentWorkspace.id === action.payload.id) {
+          state.currentWorkspace.is_active = action.payload.is_active;
+        }
       })
 
       // 🔹 Fetch Workspace Projects
@@ -48,6 +68,46 @@ const currentWorkspaceSlice = createSlice({
       .addCase(fetchWorkspaceProjects.rejected, (state, action) => {
         state.projectsLoading = false;
         state.projectsError = action.payload;
+      })
+
+      // 🔹 Create Project
+      .addCase(createProject.fulfilled, (state, action) => {
+        state.projects.unshift(action.payload);   
+
+      })
+      
+       // 🔹 Set Current Project
+       .addCase(setCurrentProject.fulfilled, (state, action) => {
+        state.currentProject = action.payload;
+      })
+
+      // 🔹 Fetch Epics for Current Project
+      .addCase(fetchEpics.pending, (state) => {
+        state.epicsLoading = true;
+        state.epicsError = null;
+      })
+      .addCase(fetchEpics.fulfilled, (state, action) => {
+        state.epicsLoading = false;
+        state.epics = action.payload;
+      })
+      .addCase(fetchEpics.rejected, (state, action) => {
+        state.epicsLoading = false;
+        state.epicsError = action.payload;
+      })
+
+      // 🔹 Fetch Issues for Epic
+      .addCase(fetchIssuesByEpic.pending, (state) => {
+        state.issuesLoading = true;
+        state.issuesError = null;
+      })
+      .addCase(fetchIssuesByEpic.fulfilled, (state, action) => {
+        const { epicId, issues } = action.payload;
+        state.issuesLoading = false;
+        state.issues[epicId] = issues;
+      })
+      .addCase(fetchIssuesByEpic.rejected, (state, action) => {
+        state.issuesLoading = false;
+        state.issuesError = action.payload;
       });
   },
 });

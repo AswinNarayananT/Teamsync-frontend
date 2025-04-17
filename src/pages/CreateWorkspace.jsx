@@ -60,12 +60,24 @@ const CreateWorkspace = () => {
     handleSubmit();
   };
 
-  const handleSubmit = () => {
-    console.log(formData)
-    dispatch(createWorkspace({ workspaceData: formData, navigate })).catch((err) => {
-      toast.error(err || "Failed to create workspace");
-    });
+  const handleSubmit = async () => {
+    console.log(formData);
+    try {
+      const resultAction = await dispatch(createWorkspace({ workspaceData: formData }));
+  
+      if (createWorkspace.fulfilled.match(resultAction)) {
+        const data = resultAction.payload;
+        if (!data.redirect_url) {
+          navigate("/dashboard"); 
+        }
+      } else {
+        toast.error(resultAction.payload || "Failed to create workspace");
+      }
+    } catch (err) {
+      toast.error("Something went wrong");
+    }
   };
+  
 
   const handleNext = () => {
     if (formData.name.trim() === "") {

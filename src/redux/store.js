@@ -23,7 +23,7 @@ const workspacePersistConfig = {
 const currentWorkspacePersistConfig = {
   key: "currentWorkspace",
   storage,
-  whitelist: ["currentWorkspace","members"], 
+  whitelist: ["currentWorkspace","members","projects","currentProject"], 
 };
 
 const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);

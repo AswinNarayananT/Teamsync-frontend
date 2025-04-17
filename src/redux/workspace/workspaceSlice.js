@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchUserWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace,  resetWorkspaceState } from "./workspaceThunks";
+import { fetchUserWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace,  resetWorkspaceState, cancelSubscription } from "./workspaceThunks";
 
 const initialState = {
   workspaces: [],
@@ -13,7 +13,7 @@ const workspaceSlice = createSlice({
   reducers: {}, 
   extraReducers: (builder) => {
     builder
-      // 🔹 Fetch Workspaces
+   
       .addCase(fetchUserWorkspaces.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -27,7 +27,6 @@ const workspaceSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Create Workspace
       .addCase(createWorkspace.pending, (state) => {
         state.loading = true;
       })
@@ -39,7 +38,6 @@ const workspaceSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Update Workspace
       .addCase(updateWorkspace.pending, (state) => {
         state.loading = true;
       })
@@ -51,7 +49,6 @@ const workspaceSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Delete Workspace
       .addCase(deleteWorkspace.pending, (state) => {
         state.loading = true;
       })
@@ -64,9 +61,24 @@ const workspaceSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Handle Reset on Logout
       .addCase(resetWorkspaceState.fulfilled, (state) => {
         state.workspaces = [];
+      })
+      
+      .addCase(cancelSubscription.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(cancelSubscription.fulfilled, (state, action) => {
+        state.loading = false;
+        const subscriptionId = action.payload;
+        const workspace = state.workspaces.find(ws => ws.stripe_subscription_id === subscriptionId);
+        if (workspace) {
+          workspace.is_active = false;
+        }
+      })
+      .addCase(cancelSubscription.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

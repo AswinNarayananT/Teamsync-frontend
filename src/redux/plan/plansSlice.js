@@ -10,7 +10,7 @@ const initialState = {
 const plansSlice = createSlice({
   name: "plans",
   initialState,
-  reducers: {}, // No need for manual reducers; handled via extraReducers
+  reducers: {}, 
   extraReducers: (builder) => {
     builder
       // 🔹 Fetch Plans

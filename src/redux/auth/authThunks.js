@@ -2,12 +2,13 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import api from "../../api";
 import { resetWorkspaceState } from "../workspace/workspaceThunks";
+import { persistor } from "../store";
 
 export const registerUser = createAsyncThunk(
   "auth/register",
   async ({ userData, navigate }, { rejectWithValue }) => {
     try {
-      console.log("📤 Registering User:", userData); // Debugging Step
+      console.log("Registering User:", userData);
       if (!userData || Object.keys(userData).length === 0) {
         throw new Error("User data is missing!");
       }
@@ -15,7 +16,7 @@ export const registerUser = createAsyncThunk(
       navigate("/otp-verify", { state: { email: userData.email } });
       toast.success("Registration successful!");
     } catch (error) {
-      console.error("❌ Registration Failed:", error.response?.data);
+      console.error("Registration Failed:", error.response?.data);
       const errorMsg = Object.values(error.response?.data || {}).flat().join(", ");
       toast.error(errorMsg);
       return rejectWithValue(errorMsg);
@@ -25,7 +26,6 @@ export const registerUser = createAsyncThunk(
 
 
 
-/** 🔹 Login User */
 export const loginUser = createAsyncThunk(
   "auth/login",
   async ({ credentials, navigate }, { rejectWithValue }) => {
@@ -69,7 +69,6 @@ export const loginUser = createAsyncThunk(
 );
 
 
-/** 🔹 Google Login */
 export const googleLogin = createAsyncThunk(
   "auth/googleLogin",
   async ({ googleCredential, navigate }, { rejectWithValue }) => {
@@ -81,10 +80,8 @@ export const googleLogin = createAsyncThunk(
       const user = response.data.user;
       const refreshToken = response.data.refresh_token;
 
-      // Store refresh token in local storage
       localStorage.setItem("refresh_token", refreshToken);
 
-      // Handle workspace invitation if applicable
       const inviteToken = localStorage.getItem("invite_token");
       if (inviteToken) {
         try {
@@ -97,14 +94,12 @@ export const googleLogin = createAsyncThunk(
         }
       }
 
-      // Navigate based on user role
       if (user.is_superuser) {
         navigate("/adminpanel");
       } else {
         navigate("/dashboard");
       }
 
-      toast.success("Google Login successful!");
       return user;
     } catch (error) {
       const errorMsg = error.response?.data?.error || "Google Login failed";
@@ -115,8 +110,6 @@ export const googleLogin = createAsyncThunk(
 );
 
 
-
-/** 🔹 Fetch User */
 export const fetchUser = createAsyncThunk(
   "auth/fetchUser",
   async (_, { rejectWithValue }) => {
@@ -129,7 +122,7 @@ export const fetchUser = createAsyncThunk(
   }
 );
 
-/** 🔹 Logout User */
+
 export const logoutUser = createAsyncThunk(
   "auth/logout",
   async (_, { dispatch, rejectWithValue }) => {
@@ -141,10 +134,13 @@ export const logoutUser = createAsyncThunk(
       }
 
       localStorage.removeItem("refresh_token");
+      localStorage.clear();
+      sessionStorage.clear();
+
+      await persistor.purge();
 
       dispatch(resetWorkspaceState());
 
-      toast.success("Logged out successfully!");
       return null;
     } catch (error) {
       toast.error("Logout failed");
@@ -153,3 +149,50 @@ export const logoutUser = createAsyncThunk(
   }
 );
 
+
+export const updateProfilePicture = createAsyncThunk(
+  "auth/updateProfilePicture",
+  async (imageUrl, { rejectWithValue }) => {
+    try {
+      console.log("bakend calling")
+      const response = await api.post("/api/v1/accounts/save-profile-images/", {
+        image_urls: [imageUrl],
+      });
+
+      return imageUrl; 
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || "Error updating profile picture");
+    }
+  }
+);
+
+
+export const updateUserDetails = createAsyncThunk(
+  "auth/updateUserDetails",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await api.put("/api/v1/accounts/update/", data);
+      return response.data;
+    } catch (error) {
+      console.error("Thunk error:", error);
+      return rejectWithValue(
+        error?.response?.data?.message || error.message || "Update failed"
+      );
+    }
+  }
+);
+
+
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async (passwordData, { rejectWithValue }) => {
+    try {
+      const response = await api.post("/api/v1/accounts/change-password/", passwordData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error
+      );
+    }
+  }
+);

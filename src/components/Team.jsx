@@ -14,7 +14,6 @@ const Team = () => {
   const [invites, setInvites] = useState([{ email: "", fullName: "", role: "" }]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch members when currentWorkspace changes
   useEffect(() => {
     if (currentWorkspace) {
       dispatch(fetchWorkspaceMembers(currentWorkspace.id));
@@ -37,7 +36,6 @@ const Team = () => {
   };
 
   const handleSendInvitation = async () => {
-    // Validate all fields are filled
     for (let i = 0; i < invites.length; i++) {
       const { email, fullName, role } = invites[i];
       if (!email || !fullName || !role) {
@@ -59,7 +57,7 @@ const Team = () => {
       });
       toast.success("Invitations sent successfully!");
       setInvites([{ email: "", fullName: "", role: "" }]);
-      dispatch(fetchWorkspaceMembers(currentWorkspace.id)); // Refresh members list
+      dispatch(fetchWorkspaceMembers(currentWorkspace.id)); 
     } catch (error) {
       toast.error("Failed to send invitations. Please try again.");
     } finally {
@@ -168,7 +166,7 @@ const Team = () => {
                   <th className="p-3 border-b border-gray-700">Name</th>
                   <th className="p-3 border-b border-gray-700">Role</th>
                   <th className="p-3 border-b border-gray-700">Join Date</th>
-                  <th className="p-3 border-b border-gray-700">Status</th>
+                  {/* <th className="p-3 border-b border-gray-700">Status</th> */}
                   <th className="p-3 border-b border-gray-700">Action</th>
                 </tr>
               </thead>
@@ -212,7 +210,7 @@ const Team = () => {
                       })}
                       </div>
                     </td>
-                    <td className="py-3 px-4">
+                    {/* <td className="py-3 px-4">
                       {member.is_active ? (
                         <span className="text-green-400 text-sm flex items-center">
                           <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
@@ -224,16 +222,16 @@ const Team = () => {
                           Inactive
                         </span>
                       )}
-                    </td>
+                    </td> */}
                     <td className="py-3 px-4">
                       <button 
                         className={`text-sm px-3 py-1 rounded-md ${
-                          member.is_active 
+                          member
                             ? "text-red-400 hover:bg-red-900/30" 
                             : "text-green-400 hover:bg-green-900/30"
                         } transition-colors`}
                       >
-                        {member.is_active ? "Block" : "Unblock"}
+                        {member ? "Block" : "Unblock"}
                       </button>
                     </td>
                   </tr>

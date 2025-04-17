@@ -1,4 +1,6 @@
 import axios from "axios";
+import { store } from "./redux/store";
+import { logoutUser } from "./redux/auth/authThunks";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -18,7 +20,8 @@ api.interceptors.response.use(
 
         if (!refreshToken) {
           console.log("NO REFRESH")
-          throw new Error("No refresh token available");
+          store.dispatch(logoutUser())
+          return Promise.reject(new Error("No refresh token available"));
         }
 
         const refreshResponse = await api.post('api/v1/token/refresh/', { refresh: refreshToken });
@@ -28,6 +31,7 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         localStorage.removeItem("refresh_token"); 
+        store.dispatch(logoutUser())
         return Promise.reject(refreshError);
       }
     }

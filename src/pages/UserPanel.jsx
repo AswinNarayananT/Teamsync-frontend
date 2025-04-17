@@ -1,95 +1,94 @@
 import React, { useState, useEffect } from "react";
 import { fetchUserWorkspaces } from "../redux/workspace/workspaceThunks";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Layout from "../components/Layout";
-import Dashboard from "./Dashboard";
-import Team from "../components/Team";
-import UserSettings from "../components/UserSettings";
+import { fetchWorkspaceStatus } from "../redux/currentworkspace/currentWorkspaceThunk";
 
 const UserPanel = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const sessionId = new URLSearchParams(location.search).get("session_id");
+
   const { workspaces, loading } = useSelector((state) => state.workspace);
+  const { currentWorkspace } = useSelector((state) => state.currentWorkspace);
   const [workspacesFetched, setWorkspacesFetched] = useState(false);
 
- 
   useEffect(() => {
-    if (workspaces.length === 0 && !loading) {
-      console.log("it is working")
-      dispatch(fetchUserWorkspaces()).then(() => setWorkspacesFetched(true));
-    }
-  }, [dispatch, workspaces.length, loading]);
+    if (sessionId) {
+      const interval = setInterval(() => {
+        console.log("🔁 Polling for workspace...");
+        dispatch(fetchUserWorkspaces()).then((action) => {
+          if (action.payload.length > 0) {
+            clearInterval(interval);
+            navigate("/dashboard");
+          }
+        });
+      }, 2000);
 
-  useEffect(() => {
-    if (!loading && workspacesFetched) {
-      if (workspaces.length > 0) {
-        console.log("Redirecting to dashboard");
-        navigate("/dashboard");
-      } else if (workspaces.length === 0) {
-        console.log("Redirecting to create workspace");
-        navigate("/create-workspace");
+      const timeout = setTimeout(() => {
+        clearInterval(interval);
+        console.warn("⏱️ Stopped polling after 20 seconds");
+      }, 20000);
+
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeout);
+      };
+    } else {
+      if (workspaces.length === 0 && !loading) {
+        dispatch(fetchUserWorkspaces()).then(() => setWorkspacesFetched(true));
       }
     }
-  }, [loading, workspacesFetched, workspaces.length, navigate]);
+  }, [dispatch, sessionId, workspaces.length, navigate]);
+
+  useEffect(() => {
+    if (!sessionId && !loading && workspacesFetched) {
+      const isAtRoot = location.pathname === "/" || location.pathname === "/dashboard";
+  
+      if (workspaces.length > 0 && isAtRoot) {
+        navigate("/dashboard", { replace: true });
+      } else if (workspaces.length === 0 && isAtRoot) {
+        navigate("/create-workspace", { replace: true });
+      }
+    }
+  }, [loading, workspacesFetched, workspaces.length, navigate, sessionId, location.pathname]);
+
+  useEffect(() => {
+    if (currentWorkspace?.id) {
+      dispatch(fetchWorkspaceStatus(currentWorkspace.id));
+    }
+  }, [dispatch, currentWorkspace?.id, location.pathname]);
+
+  const isInactive = currentWorkspace && !currentWorkspace.is_active;
+  const isOwner = currentWorkspace?.role === "owner";
 
   return (
     <Layout role="user" activeSection={activeSection} setActiveSection={setActiveSection}>
-      {activeSection === "dashboard" && <Dashboard />}
-      {activeSection === "team" && <Team />}
-      {activeSection === "settings" && <UserSettings />}
+      {isInactive ? (
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8">
+          <div className="bg-gray-800 shadow-md p-6 sm:p-8 rounded-lg text-center w-full max-w-sm">
+            <h1 className="text-xl font-semibold text-red-600 mb-3">Access Restricted</h1>
+            <p className="text-gray-400 mb-4">
+              Your current workspace has been deactivated due to a canceled plan.
+            </p>
+            {isOwner && (
+              <button
+                onClick={() => navigate("/pricing")}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition w-full"
+              >
+                Choose New Plan
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <Outlet />
+      )}
     </Layout>
   );
 };
 
 export default UserPanel;
-
-
-
-
-
-
-
-// import React, { useState,useEffect } from "react";
-// import Layout from "../components/Layout";
-// import Dashboard from "./Dashboard";
-// import { useDispatch,useSelector } from "react-redux";
-// import { fetchUserWorkspaces } from "../redux/workspace/WorkspaceActions";
-// import { useNavigate } from "react-router-dom";
-
-// const UserPanel = () => {
-//   const [activeSection, setActiveSection] = useState("dashboard");
-//   const dispatch = useDispatch();
-//   const navigate = useNavigate();
-//   const { workspaces, loading } = useSelector((state) => state.workspace);
-
-//   useEffect(() => {
-//     if (!workspaces.length && !loading) { 
-//       dispatch(fetchUserWorkspaces()); 
-//     }
-//   }, [dispatch]); // ✅ Fetch only when component mounts
-  
-//   useEffect(() => {
-//     if (!loading && workspaces.length === 0) {
-//       navigate("/create-workspace"); // ✅ Redirect only when loading is done
-//     }
-//   }, [loading, workspaces, navigate]); 
-  
-
-//   return (
-//     <Layout role="user" activeSection={activeSection} setActiveSection={setActiveSection}>
-//       {activeSection === "dashboard" && <Dashboard />}
-//       {/* {activeSection === "backlog" && <Backlog />}
-//       {activeSection === "board" && <Board />}
-//       {activeSection === "notification" && <Notification />}
-//       {activeSection === "chat" && <Chat />}
-//       {activeSection === "meeting" && <Meeting />}
-//       {activeSection === "team" && <Team />}
-//       {activeSection === "projects" && <Projects />}
-//       {activeSection === "settings" && <Settings />} */}
-//     </Layout>
-//   );
-// };
-
-

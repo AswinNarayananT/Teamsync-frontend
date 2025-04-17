@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { registerUser, loginUser, googleLogin, fetchUser, logoutUser } from "./authThunks";
+import { registerUser, loginUser, googleLogin, fetchUser, logoutUser, updateProfilePicture, updateUserDetails } from "./authThunks";
 
 const initialState = {
   user: null,
@@ -64,10 +64,44 @@ const authSlice = createSlice({
         state.user = null;
       })
 
+      .addCase(updateProfilePicture.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfilePicture.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.user) {
+          state.user.profile_picture = action.payload; 
+        }
+      })
+      .addCase(updateProfilePicture.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
         state.loading = false;
       })
+
+      .addCase(updateUserDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUserDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.user) {
+          state.user = {
+            ...state.user,
+            ...action.payload,
+          };
+        }
+      })
+      .addCase(updateUserDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
       .addCase(logoutUser.rejected, (state, action) => {
         state.error = action.payload;
       });

@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const Dropdown = ({ label, options = [], selected, setSelected, extraOption, placeholder = "Select an option", noOption="No options" }) => {
+const Dropdown = ({
+  label,
+  options = [],
+  selected,
+  setSelected,
+  extraOption,
+  placeholder = "Select an option",
+  noOption = "No options",
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -15,7 +23,7 @@ const Dropdown = ({ label, options = [], selected, setSelected, extraOption, pla
   }, []);
 
   return (
-    <div className="relative w-36" ref={dropdownRef}>
+    <div className="relative w-full sm:w-36" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         className="text-white text-sm font-semibold flex items-center justify-between w-full px-4 py-2 bg-[#1E1E24] rounded-md border border-gray-600"
@@ -33,7 +41,7 @@ const Dropdown = ({ label, options = [], selected, setSelected, extraOption, pla
               <button
                 key={option.id}
                 className={`w-full px-3 py-2 text-left hover:bg-gray-700 ${
-                    selected?.id === option.id ? "bg-gray-800" : ""
+                  selected?.id === option.id ? "bg-gray-800" : ""
                 }`}
                 onClick={() => {
                   setSelected(option);
@@ -46,7 +54,9 @@ const Dropdown = ({ label, options = [], selected, setSelected, extraOption, pla
           ) : (
             <div className="px-3 py-2 text-gray-400 text-sm">{noOption}</div>
           )}
-          {extraOption && <div className="border-t border-gray-700 p-2">{extraOption}</div>}
+          {extraOption && (
+            <div className="border-t border-gray-700 p-2">{extraOption}</div>
+          )}
         </div>
       )}
     </div>
