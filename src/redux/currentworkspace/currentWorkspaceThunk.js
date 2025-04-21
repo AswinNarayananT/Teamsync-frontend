@@ -91,14 +91,44 @@ export const setCurrentProject = createAsyncThunk(
   }
 );
 
+
+export const createIssue = createAsyncThunk(
+  "issues/createIssue",
+  async ({ issueData, projectId }, { rejectWithValue }) => {
+    try {
+
+      const response = await api.post(`/api/v1/project/${projectId}/issues/`, issueData);
+      console.log(response)
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || "Failed to create issue");
+    }
+  }
+);
+
+
 export const fetchEpics = createAsyncThunk(
   'epics/fetchEpics',
-  async (projectId, thunkAPI) => {
+  async ({ projectId }, thunkAPI) => {
     try {
-      const response = await axios.get(`/api/projects/${projectId}/epics/`);
+      const response = await api.get(`/api/v1/project/${projectId}/epics/`);
+      console.log(response.data)
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || "Failed to fetch epics");
+    }
+  }
+);
+
+export const fetchProjectIssues = createAsyncThunk(
+  "currentWorkspace/fetchProjectIssues",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/project/${projectId}/issues/list/`);
+      console.log(response.data)
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Failed to fetch issues");
     }
   }
 );

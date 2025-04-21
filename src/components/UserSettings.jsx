@@ -1,6 +1,6 @@
   import React, { useEffect, useState } from "react";
   import {  useSelector, useDispatch } from "react-redux";
-  import { FaPlus, FaCamera,FaLock, FaPencilAlt, FaRegCalendarTimes, FaChevronRight, FaArrowUp,FaCog, FaUser, FaClipboardList, FaCrown, FaEllipsisV , FaStar, FaUsers,
+  import { FaPlus, FaCamera,FaLock, FaPencilAlt, FaRegCalendarTimes, FaChevronRight, FaBell , FaUserShield ,FaCog, FaUser, FaClipboardList, FaCrown, FaEllipsisV , FaStar, FaUsers,
     FaCalendar, FaUserFriends, FaSearch, FaFilter, FaHistory, FaFileAlt, FaUserPlus, FaCommentAlt, FaShieldAlt, FaTimes , FaKey, FaCheckCircle, FaRegStar } from "react-icons/fa";
   import { uploadMultipleImagesToCloudinary } from "../utils/cloudinary";
   import { updateProfilePicture,updateUserDetails,changePassword } from "../redux/auth/authThunks";
@@ -274,28 +274,18 @@
                 </div>
                 <FaChevronRight className="w-3 h-3 text-gray-500" />
               </button>
-                
-                {/* 
+
                 <button className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-800 transition-colors">
                   <div className="flex items-center">
-                    <FaBell className="w-4 h-4 text-gray-400 mr-3" />
+                    <FaUserShield  className="w-4 h-4 text-gray-400 mr-3" />
                     <div>
-                      <p className="text-sm font-medium">Notifications</p>
-                      <p className="text-xs text-gray-500">Manage notification preferences</p>
+                      <p className="text-sm font-medium">Permissions</p>
+                      <p className="text-xs text-gray-500">Manage role preferences</p>
                     </div>
                   </div>
                   <FaChevronRight className="w-3 h-3 text-gray-500" />
                 </button>
                 
-                <button className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-800 transition-colors">
-                  <div className="flex items-center">
-                    <FaSignOutAlt className="w-4 h-4 text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium">Sign Out</p>
-                      <p className="text-xs text-gray-500">Log out of your account</p>
-                    </div>
-                  </div>
-                </button> */}
               </div>
             </div>
           </div>

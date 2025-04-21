@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -17,7 +17,7 @@ const initialState = {
   epicsLoading: false,
   epicsError: null,
 
-  issues: {},
+  issues: [],
   issuesLoading: false,
   issuesError: null,
 
@@ -95,6 +95,19 @@ const currentWorkspaceSlice = createSlice({
         state.epicsError = action.payload;
       })
 
+      .addCase(fetchProjectIssues.pending, (state) => {
+        state.issuesLoading = true;
+        state.issuesError = null;
+      })
+      .addCase(fetchProjectIssues.fulfilled, (state, action) => {
+        state.issuesLoading = false;
+        state.issues = action.payload;
+      })
+      .addCase(fetchProjectIssues.rejected, (state, action) => {
+        state.issuesLoading = false;
+        state.issuesError = action.payload;
+      })
+
       // 🔹 Fetch Issues for Epic
       .addCase(fetchIssuesByEpic.pending, (state) => {
         state.issuesLoading = true;
@@ -108,6 +121,18 @@ const currentWorkspaceSlice = createSlice({
       .addCase(fetchIssuesByEpic.rejected, (state, action) => {
         state.issuesLoading = false;
         state.issuesError = action.payload;
+      })
+
+      .addCase(createIssue.fulfilled, (state, action) => {
+        const newIssue = action.payload;
+      
+        // If the new issue is of type "epic"
+        if (newIssue.type === "epic") {
+          state.epics.unshift(newIssue);
+        } else {
+          // For other types (task, story, bug), add them to the issues array
+          state.issues.unshift(newIssue);  // Adding directly to the issues array
+        }
       });
   },
 });
