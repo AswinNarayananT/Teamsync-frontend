@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus   } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -108,6 +108,36 @@ const currentWorkspaceSlice = createSlice({
         state.issuesError = action.payload;
       })
 
+      .addCase(assignParentEpic.fulfilled, (state, action) => {
+        const { issue_id, epic_id } = action.payload;
+        const index = state.issues.findIndex(issue => issue.id === issue_id);
+      
+        if (index !== -1) {
+          state.issues[index].parent = epic_id;
+        }
+      })
+
+      .addCase(assignAssigneeToIssue.fulfilled, (state, action) => {
+        const { id: issueId, assignee } = action.payload;
+        const index = state.issues.findIndex(issue => issue.id === issueId);
+      
+        if (index !== -1) {
+          state.issues[index].assignee = assignee;
+        }
+      })
+
+      .addCase(updateIssueStatus.fulfilled, (state, action) => {
+        const { issue_id, status } = action.payload;
+        const index = state.issues.findIndex(issue => issue.id === issue_id);
+
+        if (index !== -1) {
+          state.issues[index].status = status; 
+        }
+      })
+      .addCase(updateIssueStatus.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
       // 🔹 Fetch Issues for Epic
       .addCase(fetchIssuesByEpic.pending, (state) => {
         state.issuesLoading = true;
@@ -125,13 +155,10 @@ const currentWorkspaceSlice = createSlice({
 
       .addCase(createIssue.fulfilled, (state, action) => {
         const newIssue = action.payload;
-      
-        // If the new issue is of type "epic"
         if (newIssue.type === "epic") {
           state.epics.unshift(newIssue);
         } else {
-          // For other types (task, story, bug), add them to the issues array
-          state.issues.unshift(newIssue);  // Adding directly to the issues array
+          state.issues.unshift(newIssue);  
         }
       });
   },

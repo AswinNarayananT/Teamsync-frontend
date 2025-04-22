@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from 'react-redux';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { createIssue } from "../redux/currentworkspace/currentWorkspaceThunk";
-import api from "../api";
+import { createIssue, assignParentEpic, assignAssigneeToIssue, updateIssueStatus } from "../redux/currentworkspace/currentWorkspaceThunk";
+import IssueModal from "./IssueModal";
 
 function IssueSection({
   title,
@@ -25,13 +25,29 @@ function IssueSection({
   const [checked, setChecked] = useState(false);
   const [individualChecked, setIndividualChecked] = useState({});
   const [showEpicDropdownFor, setShowEpicDropdownFor] = useState(null);
+  const [showAssigneeDropdownFor, setShowAssigneeDropdownFor] = useState(null);
+  const [showStatusDropdownFor, setShowStatusDropdownFor] = useState(null);
+  const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
+  const [selectedIssueId, setSelectedIssueId] = useState(null);
+
 
   const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
   const epics = useSelector((state) => state.currentWorkspace.epics);
+  const members = useSelector((state) => state.currentWorkspace.members);
 
   const inputRef = useRef(null);
   const inputContainerRef = useRef(null);
   const dropdownRef = useRef(null);
+  const assigneeDropdownRef = useRef(null);
+
+
+  const epicMap = useMemo(() => {
+    const map = {};
+    epics.forEach(epic => {
+      map[epic.id] = epic.title;
+    });
+    return map;
+  }, [epics]);
 
   const handleCreateClick = () => {
     setShowCreateInput(true);
@@ -77,6 +93,13 @@ function IssueSection({
       ) {
         setShowEpicDropdownFor(null);
       }
+
+      if (
+        assigneeDropdownRef.current &&
+        !assigneeDropdownRef.current.contains(event.target)
+      ) {
+        setShowAssigneeDropdownFor(null);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -105,18 +128,48 @@ function IssueSection({
     setShowEpicDropdownFor(prev => (prev === issueId ? null : issueId));
   };
 
-  const handleAddParent = async (issueId, epicId) => {
-    try {
-      await api.post('/api/v1/project/issue/assign-parent/', {
-        issue_id: issueId,
-        epic_id: epicId,
-      });
-      setShowEpicDropdownFor(null);
-    } catch (error) {
-      console.error("Failed to assign epic:", error);
+  const handleAddParent = (issueId, epicId) => {
+    dispatch(assignParentEpic({ issueId, epicId }));
+    setShowEpicDropdownFor(null);
+  };
+
+  const handleAssignMember = (issueId, memberId) => {
+    dispatch(assignAssigneeToIssue({ issueId: issueId, memberId: memberId }));
+    setShowAssigneeDropdownFor(null);
+  };
+
+  const toggleAssigneeSelector = (issueId) => {
+    if (showAssigneeDropdownFor === issueId) {
+      setShowAssigneeDropdownFor(null);
+    } else {
+      setShowAssigneeDropdownFor(issueId);
     }
   };
 
+  const getMemberById = (id) => members.find((m) => m.user_id === id) || {};
+  const getInitials = (member) => {
+    if (member.user_email) {
+      return member.user_email.slice(0, 2).toUpperCase();
+    }
+    return "";
+  };
+
+  const toggleStatusDropdown = (issueId) => {
+    setShowStatusDropdownFor(showStatusDropdownFor === issueId ? null : issueId);
+  };
+
+  const handleStatusChange = (issueId, newStatus) => {
+    dispatch(updateIssueStatus({ issueId: issueId, status: newStatus }));
+  };
+
+
+  const handleIssueTitleClick = (issueId) => {
+    
+    setSelectedIssueId(issueId);
+    console.log(selectedIssueId)
+    setIsIssueModalOpen(true);
+  };
+  
   return (
     <div
       className="bg-gray-900 rounded-2xl shadow-md mb-6 border border-gray-700"
@@ -124,28 +177,33 @@ function IssueSection({
       onDrop={handleDrop}
     >
       {/* Header */}
-      <div className="flex items-center px-4 py-3 border-b border-gray-800">
-        <input
-          type="checkbox"
-          className="mr-2 text-gray-300"
-          checked={checked}
-          onChange={handleMainCheckboxChange}
-        />
-        <button onClick={() => setExpanded(!expanded)} className="mr-2">
-          <ExpandMoreIcon className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? 'rotate-180' : ''}`} />
-        </button>
-        <h2 className="text-base font-semibold text-gray-100 mr-2">{title}</h2>
-        {dateRange && <span className="text-sm text-gray-400">{dateRange}</span>}
-        <span className="text-sm text-gray-500 ml-2">({visibleItems} of {totalItems} visible)</span>
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-850">
+        <div className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            className="w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-opacity-25 bg-gray-800"
+            checked={checked}
+            onChange={handleMainCheckboxChange}
+          />
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-gray-400 hover:text-gray-200 transition-colors"
+          >
+            <ExpandMoreIcon className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+          </button>
+          <h2 className="text-base font-semibold text-gray-100">{title}</h2>
+          {dateRange && <span className="text-sm text-gray-400 ml-2">{dateRange}</span>}
+          <span className="text-xs text-gray-500">({visibleItems} of {totalItems} visible)</span>
+        </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => onStartSprint?.()}
-            className="text-sm px-3 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="text-sm px-3 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
           >
             {isSprintSection ? 'Start Sprint' : 'Create Sprint'}
           </button>
-          <button className="text-gray-400 hover:text-gray-200">
+          <button className="text-gray-400 hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-gray-800">
             <MoreHorizIcon className="w-5 h-5" />
           </button>
         </div>
@@ -159,83 +217,174 @@ function IssueSection({
               issues.map(issue => (
                 <div
                   key={issue.id}
-                  className="flex items-center px-4 py-2 hover:bg-gray-800 cursor-grab"
+                  className="flex items-center px-4 py-3 hover:bg-gray-800/70 transition-colors cursor-grab group"
                   draggable
                   onDragStart={(e) => e.dataTransfer.setData('text/plain', issue.id)}
                 >
                   <input
                     type="checkbox"
-                    className="mr-3 text-gray-300"
+                    className="mr-3 w-4 h-4 rounded border-gray-600 text-blue-500 focus:ring-blue-500 focus:ring-opacity-25 bg-gray-800"
                     checked={individualChecked[issue.id] || false}
                     onChange={(e) => handleIndividualCheckboxChange(e, issue.id)}
                   />
-                  <span className="mr-3 text-gray-300">
+                  <span className="mr-3 text-gray-300 flex-shrink-0">
                     {issue.type === "task" && "✅"}
                     {issue.type === "story" && "📘"}
                     {issue.type === "bug" && "🐞"}
                   </span>
-                  <span className="flex-1 font-medium text-gray-100 truncate">{issue.title}</span>
-                  <div className="flex items-center gap-2">
-                    {!issue.parent ? (
-                      <div className="relative" ref={showEpicDropdownFor === issue.id ? dropdownRef : null}>
+                  <span
+                    className="flex-1 font-medium text-gray-100 truncate"
+                    onClick={() => handleIssueTitleClick(issue.id)} 
+                  >
+                    {issue.title}
+                  </span>
+
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="relative" ref={showEpicDropdownFor === issue.id ? dropdownRef : null}>
+                      {!issue.parent ? (
                         <button
                           onClick={() => toggleEpicSelector(issue.id)}
-                          className="text-green-400 text-sm hover:underline"
+                          className="text-green-400 hover:text-green-300 transition-colors text-sm h-6 w-6 flex items-center justify-center rounded-full hover:bg-gray-700"
                         >
                           ➕
                         </button>
-                        {showEpicDropdownFor === issue.id && (
-                          <div className="absolute z-10 mt-1 w-48 bg-gray-900 border border-gray-700 rounded shadow-lg">
-                            {Array.isArray(epics) && epics.length > 0 ? (
-                              epics.map(epic => (
-                                <div
-                                  key={epic.id}
-                                  className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-white"
-                                  onClick={() => handleAddParent(issue.id, epic.id)}
-                                >
-                                  {epic.title}
-                                </div>
-                              ))
-                            ) : (
-                              <div className="p-2 text-gray-400">No epics found</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="bg-purple-700 text-purple-100 text-xs px-2 py-1 rounded-full">
-                        {issue.parent}
-                      </span>
-                    )}
-                    <div className="flex items-center bg-gray-800 text-gray-300 text-xs px-2 py-1 rounded-md">
-                      {issue.status} <ExpandMoreIcon className="w-3 h-3 ml-1" />
+                      ) : (
+                        <span
+                          onClick={() => toggleEpicSelector(issue.id)}
+                          className="bg-purple-700 text-purple-100 text-xs px-2 py-1 rounded-full cursor-pointer hover:bg-purple-600 transition-colors"
+                        >
+                          {epicMap[issue.parent] || issue.parent}
+                        </span>
+                      )}
+
+                      {showEpicDropdownFor === issue.id && (
+                        <div className="absolute z-100 mt-1 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg right-0 ">
+                          {Array.isArray(epics) && epics.length > 0 ? (
+                            epics.map(epic => (
+                              <div
+                                key={epic.id}
+                                className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-white text-sm border-b border-gray-800 last:border-0"
+                                onClick={() => handleAddParent(issue.id, epic.id)}
+                              >
+                                {epic.title}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-2 text-gray-400 text-sm">No epics found</div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <span className="mx-2 text-gray-500">-</span>
-                    {issue.assignee === "AN" ? (
-                      <div className="w-8 h-8 rounded-full bg-green-600 text-white text-sm flex items-center justify-center">AN</div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-800 text-gray-400 flex items-center justify-center">
-                        <CheckCircleIcon className="w-5 h-5" />
+
+                    <div className="relative">
+                      <div
+                        onClick={() => toggleStatusDropdown(issue.id)}
+                        className="flex items-center bg-gray-800 text-gray-300 text-xs px-2.5 py-1 rounded-md hover:bg-gray-700 cursor-pointer transition-colors"
+                      >
+                        {issue.status}
+                        <ExpandMoreIcon className="w-3 h-3 ml-1" />
                       </div>
-                    )}
+
+                      {showStatusDropdownFor === issue.id && (
+                        <div className="absolute z-10 mt-1 w-32 bg-gray-900 border border-gray-700 rounded-lg shadow-lg right-0">
+                          {[
+                            { id: "todo", name: "To Do" },
+                            { id: "in_progress", name: "In Progress" },
+                            { id: "review", name: "In Review" },
+                            { id: "done", name: "Done" }
+                          ]
+                            .filter(option => option.id !== issue.status.toLowerCase().replace(' ', '_'))
+                            .map(option => (
+                              <div
+                                key={option.id}
+                                className="px-3 py-2 hover:bg-gray-700 cursor-pointer text-white text-sm border-b border-gray-800 last:border-0"
+                                onClick={() => {
+                                  handleStatusChange(issue.id, option.id);
+                                  toggleStatusDropdown(null);
+                                }}
+                              >
+                                {option.name}
+                              </div>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="mx-1 text-gray-600">•</span>
+
+                    <div className="relative" ref={showAssigneeDropdownFor === issue.id ? assigneeDropdownRef : null}>
+                      <div
+                        title={
+                          issue.assignee
+                            ? `Assigned to: ${getMemberById(issue.assignee).user_name}`
+                            : "Assign a member"
+                        }
+                        onClick={() => toggleAssigneeSelector(issue.id)}
+                        className="w-8 h-8 rounded-full bg-gray-800 text-gray-400 flex items-center justify-center cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700"
+                      >
+                        {issue.assignee ? (
+                          <span className="text-white text-sm font-semibold">
+                            {getInitials(getMemberById(issue.assignee))}
+                          </span>
+                        ) : (
+                          <CheckCircleIcon className="w-5 h-5" />
+                        )}
+
+                      </div>
+
+                      {showAssigneeDropdownFor === issue.id && (
+                        <div className="absolute z-10 mt-2 w-60 bg-gray-900 border border-gray-700 rounded-lg shadow-lg right-0">
+                          {Array.isArray(members) && members.length > 0 ? (
+                            members.map(member => (
+                              <div
+                                key={member.id}
+                                className="flex items-center gap-3 px-3 py-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-800 last:border-0 transition-colors"
+                                onClick={() => handleAssignMember(issue.id, member.id)}
+                              >
+                                <div className="w-7 h-7 rounded-full bg-green-600 text-white text-xs flex items-center justify-center">
+                                  {getInitials(member)}
+                                </div>
+                                <span className="text-sm">{member.user_email}</span>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-2 text-gray-400 text-sm">No members found</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Tooltip under the element */}
+                  <div className="absolute hidden group-hover:block bg-gray-800 text-white text-sm font-bold p-2 rounded shadow-md mt-2 left-1/2 transform -translate-x-1/2">
+                    {issue.assignee ? `Assigned to: ${getMemberById(issue.assignee).user_email}` : "Assign a member"}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-6 text-center text-gray-500 border-b border-gray-800">
-                this is empty
+              <div className="py-8 text-center text-gray-500 border-b border-gray-800 italic">
+                This section is empty
               </div>
             )}
           </div>
 
+            {isIssueModalOpen && (
+              <IssueModal
+                isOpen={isIssueModalOpen}
+                onClose={() => setIsIssueModalOpen(false)} 
+                issueId={selectedIssueId}  
+                projectId={projectId}
+                mode="view"
+              />
+            )}
+
           {/* Create Input / Button */}
-          <div className="px-4 py-3" ref={inputContainerRef}>
+          <div className="px-4 py-3 bg-gray-850" ref={inputContainerRef}>
             {showCreateInput ? (
               <div className="flex gap-2 items-center">
                 <select
                   value={issueType}
                   onChange={(e) => setIssueType(e.target.value)}
-                  className="px-2 py-1 bg-gray-800 border border-gray-700 text-gray-100 rounded-md text-xs focus:outline-none"
+                  className="px-2 py-1.5 bg-gray-800 border border-gray-700 text-gray-100 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="Task">✅ Task</option>
                   <option value="Story">📘 Story</option>
@@ -244,7 +393,7 @@ function IssueSection({
                 <input
                   ref={inputRef}
                   type="text"
-                  className="flex-1 px-2 py-1 bg-gray-800 border border-blue-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 text-sm"
+                  className="flex-1 px-3 py-1.5 bg-gray-800 border border-blue-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 text-sm"
                   placeholder={isSprintSection ? "Add issue to sprint..." : "Add issue to backlog..."}
                   value={newIssueText}
                   onChange={(e) => setNewIssueText(e.target.value)}
@@ -255,7 +404,7 @@ function IssueSection({
                 />
                 <button
                   onClick={() => handleSubmitIssue(issueType)}
-                  className="px-2 py-1 text-xs text-white bg-blue-600 rounded-md hover:bg-blue-700 transition"
+                  className="px-3 py-1.5 text-xs text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm"
                 >
                   Add
                 </button>
@@ -263,14 +412,15 @@ function IssueSection({
             ) : (
               <button
                 onClick={handleCreateClick}
-                className="text-sm font-medium text-blue-500 hover:text-blue-300 flex items-center"
+                className="text-sm font-medium text-blue-500 hover:text-blue-300 flex items-center transition-colors"
               >
-                <span className="mr-1">+</span> Create
+                <span className="mr-1 text-lg">+</span> Create
               </button>
             )}
           </div>
         </>
       )}
+      
     </div>
   );
 }

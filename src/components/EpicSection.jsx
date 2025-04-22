@@ -4,15 +4,19 @@ import { IoMdClose } from 'react-icons/io';
 import epicLogo from "../assets/epicLogo.svg";
 import EpicBlock from './EpicBlock';
 import { createIssue } from '../redux/currentworkspace/currentWorkspaceThunk';
+import IssueModal from './IssueModal'; // ✅ import your modal
 
 const EpicSection = ({ showEpic, setShowEpic }) => {
   const dispatch = useDispatch();
   const [isCreating, setIsCreating] = useState(false);
   const [epicTitle, setEpicTitle] = useState('');
+  const [openEpicId, setOpenEpicId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEpicId, setSelectedEpicId] = useState(null);
 
   const epics = useSelector((state) => state.currentWorkspace.epics);
   const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
-  
+
   const handleCreateEpic = () => {
     if (!epicTitle.trim()) return;
 
@@ -25,6 +29,15 @@ const EpicSection = ({ showEpic, setShowEpic }) => {
 
     setEpicTitle('');
     setIsCreating(false);
+  };
+
+  const handleToggleEpic = (id) => {
+    setOpenEpicId((prev) => (prev === id ? null : id));
+  };
+
+  const handleViewDetails = (epic) => {
+    setSelectedEpicId(epic.id || epic._id);
+    setIsModalOpen(true);
   };
 
   return (
@@ -44,10 +57,14 @@ const EpicSection = ({ showEpic, setShowEpic }) => {
             {epics.map((epic) => (
               <EpicBlock
                 key={epic.id || epic._id}
+                id={epic.id || epic._id}
                 title={epic.title}
-                startDate={epic.startDate}
-                dueDate={epic.enddate}
+                startDate={epic.start_date}
+                dueDate={epic.end_date}
                 statusColor={epic.statusColor || '#3F76FF'}
+                isOpen={openEpicId === (epic.id || epic._id)}
+                onToggleDetails={() => handleToggleEpic(epic.id || epic._id)}
+                onViewDetails={() => handleViewDetails(epic)}
               />
             ))}
           </div>
@@ -102,6 +119,15 @@ const EpicSection = ({ showEpic, setShowEpic }) => {
           </button>
         )}
       </div>
+
+      {/* 🟢 Issue Modal for Viewing Epic */}
+      <IssueModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        issueId={selectedEpicId}
+        mode="view"
+        projectId={projectId}
+      />
     </div>
   );
 };

@@ -17,6 +17,7 @@ const BacklogBoard = () => {
   const [modalType, setModalType] = useState("task");
   const [defaultValues, setDefaultValues] = useState({});
 
+
   useEffect(() => {
     if (currentProject) {
       const projectId = currentProject.id;
@@ -69,8 +70,8 @@ const BacklogBoard = () => {
           </div>
         )}
 
-        {/* Issue Section */}
-        <div className={`flex-1 ${showEpic ? 'm-2' : 'space-y-6 m-1'}`}>
+       {/* Issue Section */}
+        <div className={`flex-1 relative overflow-visible ${showEpic ? 'm-2' : 'space-y-6 m-1'}`}>
           {/* Display an empty sprint section */}
           <IssueSection
             title="ECOM Sprint 1"
@@ -99,10 +100,7 @@ const BacklogBoard = () => {
         mode={modalMode}
         type={modalType}
         defaultValues={defaultValues}
-        onSubmit={(data) => {
-          console.log("Submit issue data:", data);
-          setIsModalOpen(false);
-        }}
+        projectId={currentProject.id}
       />
     </div>
   );

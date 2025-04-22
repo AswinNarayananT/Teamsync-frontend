@@ -96,9 +96,9 @@ export const createIssue = createAsyncThunk(
   "issues/createIssue",
   async ({ issueData, projectId }, { rejectWithValue }) => {
     try {
-
+      console.log(issueData)
       const response = await api.post(`/api/v1/project/${projectId}/issues/`, issueData);
-      console.log(response)
+     
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || "Failed to create issue");
@@ -133,6 +133,50 @@ export const fetchProjectIssues = createAsyncThunk(
   }
 );
 
+
+export const assignParentEpic = createAsyncThunk(
+  'issues/assignParentEpic',
+  async ({ issueId, epicId }, { rejectWithValue }) => {
+    try {
+      const response = await api.post('/api/v1/project/issue/assign-parent/', {
+        issue_id: issueId,
+        epic_id: epicId,
+      });
+
+      return response.data; 
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const assignAssigneeToIssue = createAsyncThunk(
+  "issues/assignAssigneeToIssue",
+  async ({ issueId, memberId }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/api/v1/project/issue/${issueId}/assign-assignee/`, {
+        member_id: memberId,
+      });
+      return response.data; 
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+export const updateIssueStatus = createAsyncThunk(
+  "issues/updateIssueStatus",  
+  async ({ issueId, status }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/api/v1/project/issue/${issueId}/status/`, {
+        status: status,
+      });
+      return response.data;  
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
 
 export const fetchIssuesByEpic = createAsyncThunk(
   'issues/fetchIssuesByEpic',
