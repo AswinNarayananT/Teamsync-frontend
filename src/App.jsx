@@ -18,6 +18,8 @@ import UserSettings from "./components/UserSettings";
 import WorkSpaces from "./components/WorkSpaces";
 import Plans from "./components/Plans";
 import BacklogBoard from "./components/BacklogBoard";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 
 
@@ -31,6 +33,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/otp-verify" element={<OtpVerify />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:uidb64/:token" element={<ResetPassword />} />
         </Route>
 
         {/* Protected Routes (Authenticated Users) */}

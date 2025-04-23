@@ -15,9 +15,11 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [dateError, setDateError] = useState('');
+  const [parentId, setParentId] = useState(null);
 
   const projectMembers = useSelector((state) => state.currentWorkspace.members);
-  console.log(projectMembers)
+  const epics = useSelector((state) => state.currentWorkspace.epics);
 
   useEffect(() => {
     const fetchIssueDetails = async () => {
@@ -31,9 +33,10 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
           setDescription(issueData.description || '');
           setStatus(issueData.status);
           setIssueType(issueData.type);
-          setAssignee(issueData.assignee); // set the assignee user_id
+          setAssignee(issueData.assignee);
           setStartDate(issueData.start_date || '');
           setEndDate(issueData.end_date || '');
+          setParentId(issueData.parent || null);
         } catch (error) {
           toast.error('Failed to load issue details');
           console.error(error);
@@ -41,7 +44,7 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
           setIsLoading(false);
         }
       } else {
-        // Reset the form when the modal opens in "create" mode
+        // Reset form for "create" mode
         setTitle('');
         setDescription('');
         setStatus('todo');
@@ -49,6 +52,8 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
         setAssignee(null);
         setStartDate('');
         setEndDate('');
+        setDateError('');
+        setParentId(null);
       }
     };
 
@@ -57,7 +62,44 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
     }
   }, [issueId, mode, isOpen]);
 
+  // Reset parent when issue type changes to epic
+  useEffect(() => {
+    if (issueType === 'epic') {
+      setParentId(null);
+    }
+  }, [issueType]);
+
+  // Validate dates when they change
+  useEffect(() => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      if (end < start) {
+        setDateError('End date cannot be before start date');
+      } else {
+        setDateError('');
+      }
+    } else {
+      setDateError('');
+    }
+  }, [startDate, endDate]);
+
+  const handleStartDateChange = (e) => {
+    setStartDate(e.target.value);
+    // If end date exists and is now invalid, clear it
+    if (endDate && new Date(e.target.value) > new Date(endDate)) {
+      setEndDate('');
+    }
+  };
+
   const handleSubmit = async () => {
+    // Validate before submission
+    if (dateError) {
+      toast.error(dateError);
+      return;
+    }
+
     const formData = {
       title,
       description,
@@ -66,6 +108,7 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
       assignee,
       start_date: startDate || null,
       end_date: endDate || null,
+      parent: parentId,
     };
 
     try {
@@ -76,151 +119,282 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
         await dispatch(updateIssue({ issueId, issueData: formData, projectId }));
         toast.success('Issue updated successfully!');
       }
-      onClose(); // Close the modal after successful submission
+      onClose();
     } catch (error) {
       toast.error('Failed to save the issue');
       console.error(error);
     }
   };
 
+  // Status option elements with colors
+  const statusOptions = [
+    { value: 'todo', label: 'To Do', color: 'bg-blue-500' },
+    { value: 'in_progress', label: 'In Progress', color: 'bg-yellow-500' },
+    { value: 'review', label: 'Review', color: 'bg-purple-500' },
+    { value: 'done', label: 'Done', color: 'bg-green-500' }
+  ];
+
+  // Type option elements with icons (added Story)
+  const typeOptions = [
+    { value: 'task', label: 'Task', icon: '📋' },
+    { value: 'bug', label: 'Bug', icon: '🐞' },
+    { value: 'story', label: 'Story', icon: '📝' },
+    { value: 'epic', label: 'Epic', icon: '🏆' }
+  ];
+
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const today = new Date().toISOString().split('T')[0];
+
+  // Get the minimum end date (either today or start date if it exists)
+  const minEndDate = startDate || today;
+
   return (
     isOpen && (
-      <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-20">
-        <div className="bg-gray-900 text-white p-6 rounded-lg shadow-lg w-96">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">
+      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-30 backdrop-blur-sm">
+        <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
+          {/* Header */}
+          <div className="flex justify-between items-center px-6 py-4 bg-gray-800 border-b border-gray-700">
+            <h2 className="text-xl font-bold tracking-tight">
               {mode === 'create' ? 'Create Issue' : mode === 'edit' ? 'Edit Issue' : 'View Issue'}
             </h2>
-            <button onClick={onClose}>
+            <button onClick={onClose} className="hover:bg-gray-700 p-1 rounded-md transition-colors duration-200">
               <IoMdClose size={24} />
             </button>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Title</label>
-            <input
-              type="text"
-              className="w-full p-2 border rounded bg-gray-700 text-white"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={mode === 'view'}
-            />
-          </div>
+          <div className="p-6">
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Left column - Main inputs */}
+              <div className="flex-1 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    disabled={mode === 'view'}
+                    placeholder="Issue title"
+                    required
+                  />
+                </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Description</label>
-            <textarea
-              className="w-full p-2 border rounded bg-gray-700 text-white"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={mode === 'view'}
-            />
-          </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                  <textarea
+                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    disabled={mode === 'view'}
+                    placeholder="Describe the issue in detail..."
+                  />
+                </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Status</label>
-            <select
-            className="w-full p-2 border rounded bg-gray-700 text-white"
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            disabled={mode === 'view'}
-          >
-            <option value="todo">To Do</option>
-            <option value="in_progress">In Progress</option>
-            <option value="review">Review</option>
-            <option value="done">Done</option>
-          </select>
-          </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
+                    <input
+                      type="date"
+                      className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={startDate}
+                      onChange={handleStartDateChange}
+                      disabled={mode === 'view'}
+                      min={today}
+                    />
+                  </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Issue Type</label>
-            {mode === 'view' || mode === 'edit' ? (
-              <div className="w-full p-2 border rounded bg-gray-700 text-white">
-                {issueType} {/* Display issue type as a label */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
+                    <input
+                      type="date"
+                      className={`w-full p-2 border ${dateError ? 'border-red-500' : 'border-gray-600'} rounded-md bg-gray-800 text-white focus:ring-2 ${dateError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent`}
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      disabled={mode === 'view' || !startDate}
+                      min={minEndDate}
+                    />
+                    {!startDate && endDate && (
+                      <p className="text-yellow-400 text-xs mt-1">Please select a start date first</p>
+                    )}
+                    {dateError && (
+                      <p className="text-red-500 text-xs mt-1">{dateError}</p>
+                    )}
+                  </div>
+                </div>
               </div>
-            ) : (
-              <select
-                className="w-full p-2 border rounded bg-gray-700 text-white"
-                value={issueType}
-                onChange={(e) => setIssueType(e.target.value)}
-                disabled={mode === 'view'}
-              >
-                <option value="task">Task</option>
-                <option value="bug">Bug</option>
-                <option value="epic">Epic</option>
-              </select>
-            )}
-          </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Assignee</label>
-            <select
-  className="w-full p-2 border rounded bg-gray-700 text-white"
-  value={assignee || ''}
-  onChange={(e) => setAssignee(Number(e.target.value))}
-  disabled={mode === 'view'}
->
-  {/* Show 'Select Assignee' only when there's no current assignee */}
-  {!assignee && <option value="">Select Assignee</option>}
+              {/* Right column - Selections */}
+              <div className="md:w-64 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                  <div className="relative">
+                    <select
+                      className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                      disabled={mode === 'view'}
+                    >
+                      {statusOptions.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-3 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {/* Status indicator */}
+                  <div className="mt-2 flex items-center">
+                    <div className={`w-3 h-3 rounded-full ${statusOptions.find(o => o.value === status)?.color || 'bg-gray-500'} mr-2`}></div>
+                    <span className="text-sm">{statusOptions.find(o => o.value === status)?.label}</span>
+                  </div>
+                </div>
 
-  {/* If there's a current assignee, show it as selected */}
-  {assignee && (
-    <option value={assignee}>
-      {projectMembers.find((member) => member.user_id === assignee)?.user_email || 'Selected User'}
-    </option>
-  )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Issue Type</label>
+                  <div className="relative">
+                    {mode === 'view' || mode === 'edit' ? (
+                      <div className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white">
+                        <span className="mr-2">{typeOptions.find(t => t.value === issueType)?.icon}</span>
+                        {issueType.charAt(0).toUpperCase() + issueType.slice(1)}
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <select
+                          className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={issueType}
+                          onChange={(e) => setIssueType(e.target.value)}
+                        >
+                          {typeOptions.map(option => (
+                            <option key={option.value} value={option.value}>{option.icon} {option.label}</option>
+                          ))}
+                        </select>
+                        <div className="absolute right-3 top-3 pointer-events-none">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {/* Type indicator */}
+                  <div className="mt-2 flex items-center">
+                    <span className="text-lg mr-2">{typeOptions.find(t => t.value === issueType)?.icon}</span>
+                    <span className="text-sm">{typeOptions.find(t => t.value === issueType)?.label}</span>
+                  </div>
+                </div>
 
-  {/* Show the rest of the members (excluding current assignee) */}
-  {projectMembers
-    .filter((member) => member.user_id !== assignee)
-    .map((member) => (
-      <option key={member.user_id} value={member.user_id}>
-        {member.user_email}
-      </option>
-    ))}
-</select>
-          </div>
+                {/* Parent Epic Field - Show for all types except Epic */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Parent Epic
+                    {issueType === 'epic' && <span className="text-gray-500 text-xs ml-2">(Not applicable)</span>}
+                  </label>
+                  <div className="relative">
+                    {issueType === 'epic' ? (
+                      <div className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-gray-400 cursor-not-allowed">
+                        Not applicable for Epics
+                      </div>
+                    ) : (
+                      <>
+                        <select
+                          className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          value={parentId || ''}
+                          onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
+                          disabled={mode === 'view' || issueType === 'epic'}
+                        >
+                          <option value="">No parent epic</option>
+                          {epics.map((epic) => (
+                            <option key={epic.id} value={epic.id}>
+                              {epic.title}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute right-3 top-3 pointer-events-none">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {/* Parent Epic indicator */}
+                  {parentId && issueType !== 'epic' && (
+                    <div className="mt-2 flex items-center">
+                      <span className="text-lg mr-2">🏆</span>
+                      <span className="text-sm truncate">
+                        {epics.find(epic => epic.id === parentId)?.title || 'Selected Epic'}
+                      </span>
+                    </div>
+                  )}
+                </div>
 
-          <div className="mb-4 flex gap-4">
-            <div className="w-1/2">
-              <label className="block text-sm font-medium">Start Date</label>
-              <input
-                type="date"
-                className="w-full p-2 border rounded bg-gray-700 text-white"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                disabled={mode === 'view'}
-              />
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Assignee</label>
+                  <div className="relative">
+                    <select
+                      className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={assignee || ''}
+                      onChange={(e) => setAssignee(e.target.value ? Number(e.target.value) : null)}
+                      disabled={mode === 'view'}
+                    >
+                      <option value="">Unassigned</option>
+                      {projectMembers.map(member => (
+                        <option key={member.user_id} value={member.user_id}>
+                          {member.user_email}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-3 pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {/* Assignee indicator */}
+                  {assignee && (
+                    <div className="mt-2 flex items-center">
+                      <div className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">
+                        {(projectMembers.find(m => m.user_id === assignee)?.user_email || '').charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm truncate">
+                        {projectMembers.find(m => m.user_id === assignee)?.user_email || 'Selected User'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            <div className="w-1/2">
-              <label className="block text-sm font-medium">End Date</label>
-              <input
-                type="date"
-                className="w-full p-2 border rounded bg-gray-700 text-white"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                disabled={mode === 'view'}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-4">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-500 text-white rounded"
-            >
-              Cancel
-            </button>
-            {mode !== 'view' && (
+            {/* Footer */}
+            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-700">
               <button
-                onClick={handleSubmit}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-                disabled={isLoading}
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors duration-200"
               >
-                {isLoading ? (mode === 'create' ? 'Creating...' : 'Updating...') : mode === 'create' ? 'Create Issue' : 'Update Issue'}
+                Cancel
               </button>
-            )}
+              {mode !== 'view' && (
+                <button
+                  onClick={handleSubmit}
+                  className={`px-4 py-2 ${dateError ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500'} text-white rounded-md transition-colors duration-200 flex items-center`}
+                  disabled={isLoading || !!dateError}
+                >
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      {mode === 'create' ? 'Creating...' : 'Updating...'}
+                    </>
+                  ) : (
+                    mode === 'create' ? 'Create Issue' : 'Update Issue'
+                  )}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

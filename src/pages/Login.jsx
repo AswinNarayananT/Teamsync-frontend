@@ -161,6 +161,18 @@ export default function AuthPage() {
                     />
                     <ErrorMessage name="password" component="div" className="text-red-500 text-xs mt-1" />
                   </div>
+                  
+                  {isLogin && (
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        className="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors"
+                        onClick={() => navigate("/forgot-password")}
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
 
                   {!isLogin && (
                     <div>
