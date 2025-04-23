@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus   } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -159,6 +159,21 @@ const currentWorkspaceSlice = createSlice({
           state.epics.unshift(newIssue);
         } else {
           state.issues.unshift(newIssue);  
+        }
+      })
+      .addCase(updateIssue.fulfilled, (state, action) => {
+        const updatedIssue = action.payload;
+      
+        if (updatedIssue.type === "epic") {
+          const index = state.epics.findIndex((epic) => epic.id === updatedIssue.id);
+          if (index !== -1) {
+            state.epics[index] = updatedIssue;
+          }
+        } else {
+          const index = state.issues.findIndex((issue) => issue.id === updatedIssue.id);
+          if (index !== -1) {
+            state.issues[index] = updatedIssue;
+          }
         }
       });
   },

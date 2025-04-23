@@ -40,7 +40,7 @@ function App() {
           <Route path="team" element={<Team />} />
           <Route path="settings" element={<UserSettings />} />
           <Route path="backlog" element={<BacklogBoard />} />
-
+          
         </Route>
           <Route path="/create-workspace" element={<CreateWorkspace />} />
         </Route>

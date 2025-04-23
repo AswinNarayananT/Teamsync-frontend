@@ -106,6 +106,21 @@ export const createIssue = createAsyncThunk(
   }
 );
 
+export const updateIssue = createAsyncThunk(
+  'currentWorkspace/updateIssue', // action type
+  async ({ issueId, issueData, projectId }, thunkAPI) => {
+    try {
+      // Sending the API request with the issue ID and issue data
+      const res = await api.put(`/api/v1/project/issue/${issueId}/`, issueData);
+      return res.data; // Return the updated issue data
+    } catch (error) {
+      // If the request fails, log the error and throw it
+      console.error('Error updating issue:', error);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 
 export const fetchEpics = createAsyncThunk(
   'epics/fetchEpics',

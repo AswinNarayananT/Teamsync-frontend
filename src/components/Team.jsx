@@ -13,12 +13,33 @@ const Team = () => {
   );
   const [invites, setInvites] = useState([{ email: "", fullName: "", role: "" }]);
   const [loading, setLoading] = useState(false);
+  const [customRoles, setCustomRoles] = useState([]);
+
 
   useEffect(() => {
-    if (currentWorkspace) {
+    const fetchData = async () => {
+      if (!currentWorkspace) return;
+  
+      // Fetch workspace members
       dispatch(fetchWorkspaceMembers(currentWorkspace.id));
-    }
+  
+      // Fetch custom roles
+      try {
+        const res = await api.get(`/api/v1/workspace/${currentWorkspace.id}/custom-roles/`);
+        setCustomRoles(res.data); // assuming res.data is an array of { name: string }
+      } catch (err) {
+        console.error("Failed to fetch custom roles", err);
+      }
+    };
+  
+    fetchData();
   }, [currentWorkspace, dispatch]);
+
+  const defaultRoles = ["Manager", "Developer", "Designer"];
+  const roleOptions = [
+    ...defaultRoles.map(role => ({ label: role, value: role })),
+    ...customRoles.map(role => ({ label: role.name, value: role.name })),
+  ];
 
   const handleAddRow = () => {
     if (invites.length >= MAX_INVITES) return;
@@ -98,10 +119,11 @@ const Team = () => {
                 onChange={(e) => handleChange(index, "role", e.target.value)}
                 className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 flex-1 focus:border-blue-500 focus:outline-none transition-colors"
               >
-                <option value="">Select role</option>
-                <option value="Manager">Manager</option>
-                <option value="Developer">Developer</option>
-                <option value="Designer">Designer</option>
+                {roleOptions.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
               </select>
               {invites.length > 1 && (
                 <button

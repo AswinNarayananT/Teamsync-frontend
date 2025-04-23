@@ -258,7 +258,7 @@ function IssueSection({
                       )}
 
                       {showEpicDropdownFor === issue.id && (
-                        <div className="absolute z-100 mt-1 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg right-0 ">
+                        <div className="absolute z-10 mt-1 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg right-0 ">
                           {Array.isArray(epics) && epics.length > 0 ? (
                             epics.map(epic => (
                               <div
@@ -373,7 +373,7 @@ function IssueSection({
                 onClose={() => setIsIssueModalOpen(false)} 
                 issueId={selectedIssueId}  
                 projectId={projectId}
-                mode="view"
+                mode={selectedIssueId ? 'edit' : 'create'} 
               />
             )}
 

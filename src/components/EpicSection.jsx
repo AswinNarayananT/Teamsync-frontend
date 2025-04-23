@@ -41,7 +41,7 @@ const EpicSection = ({ showEpic, setShowEpic }) => {
   };
 
   return (
-    <div className="w-64 bg-[#202020] p-4 rounded shadow h-96 flex flex-col">
+    <div className="w-70 bg-[#202020] p-4 rounded shadow h-150 flex flex-col">
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <span className="text-lg font-semibold text-white">Epic</span>
@@ -120,12 +120,11 @@ const EpicSection = ({ showEpic, setShowEpic }) => {
         )}
       </div>
 
-      {/* 🟢 Issue Modal for Viewing Epic */}
       <IssueModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         issueId={selectedEpicId}
-        mode="view"
+        mode={selectedEpicId ? 'edit' : 'create'} 
         projectId={projectId}
       />
     </div>

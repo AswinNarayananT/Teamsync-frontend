@@ -16,6 +16,7 @@
   } from "@mui/material";
   import { toast } from "react-toastify";
   import { useNavigate } from "react-router-dom";
+  import RoleManagementModal from "./RoleManagement";
 
 
 
@@ -32,6 +33,7 @@
     const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [subscription, setSubscription] = useState(null);
     const [openConfirm, setOpenConfirm] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false);
 
     const handleOpen = () => setOpenConfirm(true);
     const handleClose = () => setOpenConfirm(false);
@@ -275,17 +277,27 @@
                 <FaChevronRight className="w-3 h-3 text-gray-500" />
               </button>
 
-                <button className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-800 transition-colors">
-                  <div className="flex items-center">
-                    <FaUserShield  className="w-4 h-4 text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium">Permissions</p>
-                      <p className="text-xs text-gray-500">Manage role preferences</p>
-                    </div>
+              <button
+                className="flex items-center justify-between w-full px-6 py-4 text-left hover:bg-gray-800 transition-colors"
+                onClick={() => {
+                  if (ownedWorkspace) {
+                    setModalOpen(true)
+                  } else {
+                    toast("You must be the owner of a workspace to manage roles.");
+                  }
+                }}
+              >
+                <div className="flex items-center">
+                  <FaUserShield className="w-4 h-4 text-gray-400 mr-3" />
+                  <div>
+                    <p className="text-sm font-medium">Role Preferences</p>
+                    <p className="text-xs text-gray-500">Manage roles and permissions</p>
                   </div>
-                  <FaChevronRight className="w-3 h-3 text-gray-500" />
-                </button>
-                
+                </div>
+                <FaChevronRight className="w-3 h-3 text-gray-500" />
+              </button>
+
+              <RoleManagementModal open={modalOpen} onClose={() => setModalOpen(false)} />
               </div>
             </div>
           </div>
@@ -559,6 +571,7 @@
             </div>
           </div>
         </div>
+        
       </div>
     
       {/* Change Password Modal */}
@@ -776,6 +789,8 @@
         </div>
       )}
     </div>
+
+    
     );
   };
 

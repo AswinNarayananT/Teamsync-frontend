@@ -15,7 +15,6 @@ const BacklogBoard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [modalType, setModalType] = useState("task");
-  const [defaultValues, setDefaultValues] = useState({});
 
 
   useEffect(() => {
@@ -33,7 +32,6 @@ const BacklogBoard = () => {
   const openCreateIssueModal = () => {
     setModalType("task");
     setModalMode("create");
-    setDefaultValues({});
     setIsModalOpen(true);
   };
 
@@ -99,7 +97,6 @@ const BacklogBoard = () => {
         onClose={() => setIsModalOpen(false)}
         mode={modalMode}
         type={modalType}
-        defaultValues={defaultValues}
         projectId={currentProject.id}
       />
     </div>
