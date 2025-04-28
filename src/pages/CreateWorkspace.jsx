@@ -21,6 +21,7 @@ const CreateWorkspace = () => {
   const { workspaces } = useSelector((state) => state.workspace);
 
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     workType: "",
     name: "",
@@ -61,23 +62,24 @@ const CreateWorkspace = () => {
   };
 
   const handleSubmit = async () => {
-    console.log(formData);
+    setSubmitting(true);
     try {
       const resultAction = await dispatch(createWorkspace({ workspaceData: formData }));
-  
+
       if (createWorkspace.fulfilled.match(resultAction)) {
         const data = resultAction.payload;
         if (!data.redirect_url) {
-          navigate("/dashboard"); 
+          navigate("/dashboard");
         }
       } else {
         toast.error(resultAction.payload || "Failed to create workspace");
       }
     } catch (err) {
       toast.error("Something went wrong");
+    } finally {
+      setSubmitting(false);
     }
   };
-  
 
   const handleNext = () => {
     if (formData.name.trim() === "") {
@@ -212,13 +214,23 @@ const CreateWorkspace = () => {
                   </div>
                   <div className="mt-6 flex justify-end">
                     <button
-                      className={`bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-white font-medium transition text-sm ${
-                        !formData.plan_id ? "opacity-50 cursor-not-allowed" : ""
+                      className={`bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-white font-medium transition text-sm flex items-center justify-center gap-2 ${
+                        (!formData.plan_id || submitting) ? "opacity-50 cursor-not-allowed" : ""
                       }`}
                       onClick={() => handlePlanSelect(formData.plan_id)}
-                      disabled={!formData.plan_id}
+                      disabled={!formData.plan_id || submitting}
                     >
-                      Continue
+                      {submitting ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                          </svg>
+                          Loading...
+                        </>
+                      ) : (
+                        "Continue"
+                      )}
                     </button>
                   </div>
                 </>

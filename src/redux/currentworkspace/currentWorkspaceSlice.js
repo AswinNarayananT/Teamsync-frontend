@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -20,6 +20,10 @@ const initialState = {
   issues: [],
   issuesLoading: false,
   issuesError: null,
+
+  sprints: [],
+  sprintsLoading: false,
+  sprintsError: null,
 
 };
 
@@ -46,9 +50,16 @@ const currentWorkspaceSlice = createSlice({
       .addCase(fetchWorkspaceMembers.rejected, (state, action) => {
         state.membersLoading = false;
         state.membersError = action.payload;
-     
       })
 
+      // 🔹 Remove Member from Workspace
+      .addCase(removeWorkspaceMember.pending, (state) => {
+        state.membersError = null;
+      })
+      .addCase(removeWorkspaceMember.fulfilled, (state, action) => {
+        const removedUserId = action.payload; 
+        state.members = state.members.filter(member => member.id !== removedUserId);
+      })      
        // 🔹 Fetch Workspace status
       .addCase(fetchWorkspaceStatus.fulfilled, (state, action) => {
         if (state.currentWorkspace && state.currentWorkspace.id === action.payload.id) {
@@ -108,6 +119,19 @@ const currentWorkspaceSlice = createSlice({
         state.issuesError = action.payload;
       })
 
+      .addCase(fetchSprintsInProject.pending, (state) => {
+        state.sprintsLoading = true;
+        state.sprintsError = null;
+      })
+      .addCase(fetchSprintsInProject.fulfilled, (state, action) => {
+        state.sprintsLoading = false;
+        state.sprints = action.payload;
+      })
+      .addCase(fetchSprintsInProject.rejected, (state, action) => {
+        state.sprintsLoading = false;
+        state.sprintsError = action.payload;
+      })
+
       .addCase(assignParentEpic.fulfilled, (state, action) => {
         const { issue_id, epic_id } = action.payload;
         const index = state.issues.findIndex(issue => issue.id === issue_id);
@@ -163,7 +187,6 @@ const currentWorkspaceSlice = createSlice({
       })
       .addCase(updateIssue.fulfilled, (state, action) => {
         const updatedIssue = action.payload;
-      
         if (updatedIssue.type === "epic") {
           const index = state.epics.findIndex((epic) => epic.id === updatedIssue.id);
           if (index !== -1) {

@@ -1,7 +1,7 @@
 import React from "react";
 
 const AsideItem = ({ icon, text, active, onClick, collapsed }) => {
-  // Map icon names to SVG components
+
   const renderIcon = (iconName) => {
     const iconProps = {
       className: `h-5 w-5 ${active ? "text-white" : "text-gray-400 group-hover:text-gray-200"}`,

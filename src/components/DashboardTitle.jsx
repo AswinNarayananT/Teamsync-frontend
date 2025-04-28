@@ -60,8 +60,9 @@ const DashboardTitle = ({ role }) => {
     } catch (err) {
       console.error("Project creation failed:", err);
       const errorMessage =
-        err?.detail || err?.message || "Failed to create project.";
-      toast.error(errorMessage);
+      err?.response?.data?.detail || err?.detail || err?.message || "Failed to create project.";
+  
+    toast.error(errorMessage);
     }
   };
 

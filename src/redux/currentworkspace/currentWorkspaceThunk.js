@@ -25,14 +25,31 @@ export const fetchWorkspaceMembers = createAsyncThunk(
     async (workspaceId, { rejectWithValue }) => {
       try {
         const response = await api.get(`/api/v1/workspace/${workspaceId}/members/`);
-        console.log(response.data.members)
         return response.data.members || [];
       } catch (error) {
-        console.error("❌ Failed to Fetch Workspace Members:", error.response?.data);
+        console.error("Failed to Fetch Workspace Members:", error.response?.data);
         return rejectWithValue(error.response?.data?.error || "Failed to fetch members");
       }
     }
   );
+
+  export const removeWorkspaceMember = createAsyncThunk(
+    "currentWorkspace/removeWorkspaceMember",
+    async ({ workspaceId, userId }, { rejectWithValue }) => {
+      try {
+        const res = await api.delete(`/api/v1/workspace/${workspaceId}/remove-member/${userId}/`);
+        return res.data.id;
+      } catch (error) {
+        const errorMessage = 
+          error?.response?.data?.detail || 
+          error?.detail || 
+          error?.message || 
+          "Failed to remove member.";
+        return rejectWithValue(errorMessage);
+      }
+    }
+  );
+  
 
 
 
@@ -64,10 +81,11 @@ export const fetchWorkspaceMembers = createAsyncThunk(
   
         return newProject;
       } catch (err) {
-        return rejectWithValue(err.response?.data?.message || "Failed to create project");
+        return rejectWithValue(err.response?.data || { detail: "Failed to create project" });
       }
     }
   );
+
 
 // 🔹 Fetch Workspace Projects
 export const fetchWorkspaceProjects = createAsyncThunk(
@@ -96,7 +114,6 @@ export const createIssue = createAsyncThunk(
   "issues/createIssue",
   async ({ issueData, projectId }, { rejectWithValue }) => {
     try {
-      console.log(issueData)
       const response = await api.post(`/api/v1/project/${projectId}/issues/`, issueData);
      
       return response.data;
@@ -107,16 +124,26 @@ export const createIssue = createAsyncThunk(
 );
 
 export const updateIssue = createAsyncThunk(
-  'currentWorkspace/updateIssue', // action type
+  'currentWorkspace/updateIssue',
   async ({ issueId, issueData, projectId }, thunkAPI) => {
     try {
-      // Sending the API request with the issue ID and issue data
       const res = await api.put(`/api/v1/project/issue/${issueId}/`, issueData);
-      return res.data; // Return the updated issue data
+      return res.data; 
     } catch (error) {
-      // If the request fails, log the error and throw it
       console.error('Error updating issue:', error);
       return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchIssueById = createAsyncThunk(
+  'issue/fetchById',
+  async (issueId, thunkAPI) => {
+    try {
+      const response = await api.get(`/api/v1/project/issue/${issueId}/`);
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data || 'Error fetching issue');
     }
   }
 );
@@ -127,7 +154,6 @@ export const fetchEpics = createAsyncThunk(
   async ({ projectId }, thunkAPI) => {
     try {
       const response = await api.get(`/api/v1/project/${projectId}/epics/`);
-      console.log(response.data)
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response?.data || "Failed to fetch epics");
@@ -140,7 +166,6 @@ export const fetchProjectIssues = createAsyncThunk(
   async (projectId, { rejectWithValue }) => {
     try {
       const response = await api.get(`/api/v1/project/${projectId}/issues/list/`);
-      console.log(response.data)
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || "Failed to fetch issues");
@@ -148,6 +173,19 @@ export const fetchProjectIssues = createAsyncThunk(
   }
 );
 
+export const fetchSprintsInProject = createAsyncThunk(
+  "sprints/fetchInProject",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/project/${projectId}/sprints/`);
+      return response.data; 
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch sprints."
+      );
+    }
+  }
+);
 
 export const assignParentEpic = createAsyncThunk(
   'issues/assignParentEpic',

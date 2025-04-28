@@ -1,10 +1,11 @@
 import { Routes, Route } from "react-router-dom";
+import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import OtpVerify from "./pages/OtpVerify";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import "./App.css";
 import AdminPanel from "./pages/AdminPanel";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import ProtectedRoute from "./components/ProtectedRoute";

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IoMdClose } from 'react-icons/io';
-import { createIssue, updateIssue } from '../redux/currentworkspace/currentWorkspaceThunk';
+import { createIssue, updateIssue,fetchIssueById } from '../redux/currentworkspace/currentWorkspaceThunk';
 import { toast } from 'react-toastify';
 import api from '../api';
 
@@ -21,55 +21,52 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
   const projectMembers = useSelector((state) => state.currentWorkspace.members);
   const epics = useSelector((state) => state.currentWorkspace.epics);
 
-  useEffect(() => {
-    const fetchIssueDetails = async () => {
-      if (issueId && mode === 'edit') {
-        setIsLoading(true);
-        try {
-          const response = await api.get(`/api/v1/project/issue/${issueId}/`);
-          const issueData = response.data;
-
-          setTitle(issueData.title);
-          setDescription(issueData.description || '');
-          setStatus(issueData.status);
-          setIssueType(issueData.type);
-          setAssignee(issueData.assignee);
-          setStartDate(issueData.start_date || '');
-          setEndDate(issueData.end_date || '');
-          setParentId(issueData.parent || null);
-        } catch (error) {
-          toast.error('Failed to load issue details');
-          console.error(error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        // Reset form for "create" mode
-        setTitle('');
-        setDescription('');
-        setStatus('todo');
-        setIssueType('task');
-        setAssignee(null);
-        setStartDate('');
-        setEndDate('');
-        setDateError('');
-        setParentId(null);
+  const fetchIssueDetails = async () => {
+    if (issueId && mode === 'edit') {
+      setIsLoading(true);
+      try {
+        const issueData = await dispatch(fetchIssueById(issueId)).unwrap(); 
+  
+        setTitle(issueData.title);
+        setDescription(issueData.description || '');
+        setStatus(issueData.status);
+        setIssueType(issueData.type);
+        setAssignee(issueData.assignee);
+        setStartDate(issueData.start_date || '');
+        setEndDate(issueData.end_date || '');
+        setParentId(issueData.parent || null);
+      } catch (error) {
+        toast.error("Failed to load issue details");
+        console.error(error);
+      } finally {
+        setIsLoading(false);
       }
-    };
+    } else {
+      setTitle('');
+      setDescription('');
+      setStatus('todo');
+      setIssueType('task');
+      setAssignee(null);
+      setStartDate('');
+      setEndDate('');
+      setDateError('');
+      setParentId(null);
+    }
+  };
+
+  useEffect(() => {
 
     if (isOpen) {
       fetchIssueDetails();
     }
   }, [issueId, mode, isOpen]);
 
-  // Reset parent when issue type changes to epic
   useEffect(() => {
     if (issueType === 'epic') {
       setParentId(null);
     }
   }, [issueType]);
 
-  // Validate dates when they change
   useEffect(() => {
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -87,14 +84,13 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
 
   const handleStartDateChange = (e) => {
     setStartDate(e.target.value);
-    // If end date exists and is now invalid, clear it
+
     if (endDate && new Date(e.target.value) > new Date(endDate)) {
       setEndDate('');
     }
   };
 
   const handleSubmit = async () => {
-    // Validate before submission
     if (dateError) {
       toast.error(dateError);
       return;
@@ -113,10 +109,10 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
 
     try {
       if (mode === 'create') {
-        await dispatch(createIssue({ issueData: formData, projectId }));
+        dispatch(createIssue({ issueData: formData, projectId }));
         toast.success('Issue created successfully!');
       } else if (mode === 'edit') {
-        await dispatch(updateIssue({ issueId, issueData: formData, projectId }));
+        dispatch(updateIssue({ issueId, issueData: formData, projectId }));
         toast.success('Issue updated successfully!');
       }
       onClose();
@@ -126,7 +122,6 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
     }
   };
 
-  // Status option elements with colors
   const statusOptions = [
     { value: 'todo', label: 'To Do', color: 'bg-blue-500' },
     { value: 'in_progress', label: 'In Progress', color: 'bg-yellow-500' },
@@ -134,7 +129,6 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
     { value: 'done', label: 'Done', color: 'bg-green-500' }
   ];
 
-  // Type option elements with icons (added Story)
   const typeOptions = [
     { value: 'task', label: 'Task', icon: '📋' },
     { value: 'bug', label: 'Bug', icon: '🐞' },
@@ -142,10 +136,8 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
     { value: 'epic', label: 'Epic', icon: '🏆' }
   ];
 
-  // Get today's date in YYYY-MM-DD format for min attribute
   const today = new Date().toISOString().split('T')[0];
 
-  // Get the minimum end date (either today or start date if it exists)
   const minEndDate = startDate || today;
 
   return (

@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchWorkspaceMembers } from "../redux/currentworkspace/currentWorkspaceThunk";
+import { fetchWorkspaceMembers,removeWorkspaceMember } from "../redux/currentworkspace/currentWorkspaceThunk";
 import api from "../api";
 import { toast } from "react-toastify";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button
+} from "@mui/material";
+
 
 const MAX_INVITES = 6;
 
@@ -11,39 +20,60 @@ const Team = () => {
   const { currentWorkspace, members, membersLoading, membersError } = useSelector(
     (state) => state.currentWorkspace
   );
+
   const [invites, setInvites] = useState([{ email: "", fullName: "", role: "" }]);
   const [loading, setLoading] = useState(false);
   const [customRoles, setCustomRoles] = useState([]);
+  const [roleOptions, setRoleOptions] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
 
 
+  // Fetch workspace data
   useEffect(() => {
     const fetchData = async () => {
       if (!currentWorkspace) return;
-  
-      // Fetch workspace members
+
       dispatch(fetchWorkspaceMembers(currentWorkspace.id));
-  
-      // Fetch custom roles
+
       try {
         const res = await api.get(`/api/v1/workspace/${currentWorkspace.id}/custom-roles/`);
-        setCustomRoles(res.data); // assuming res.data is an array of { name: string }
+        setCustomRoles(res.data);
       } catch (err) {
         console.error("Failed to fetch custom roles", err);
       }
     };
-  
+
     fetchData();
   }, [currentWorkspace, dispatch]);
 
-  const defaultRoles = ["Manager", "Developer", "Designer"];
-  const roleOptions = [
-    ...defaultRoles.map(role => ({ label: role, value: role })),
-    ...customRoles.map(role => ({ label: role.name, value: role.name })),
-  ];
+  // Update roleOptions when customRoles are fetched
+  useEffect(() => {
+    const defaultRoles = ["Manager", "Developer", "Designer"];
+    const options = [
+      ...defaultRoles.map((role) => ({ label: role, value: role })),
+      ...customRoles.map((role) => ({ label: role.name, value: role.name })),
+    ];
+    setRoleOptions(options);
+  }, [customRoles]);
+
+  // Set default role for existing invites if missing
+  useEffect(() => {
+    if (roleOptions.length > 0) {
+      setInvites((prevInvites) =>
+        prevInvites.map((invite) =>
+          invite.role ? invite : { ...invite, role: roleOptions[0].value }
+        )
+      );
+    }
+  }, [roleOptions]);
 
   const handleAddRow = () => {
     if (invites.length >= MAX_INVITES) return;
-    setInvites([...invites, { email: "", fullName: "", role: "" }]);
+    setInvites([
+      ...invites,
+      { email: "", fullName: "", role: roleOptions[0]?.value || "" },
+    ]);
   };
 
   const handleRemoveRow = (index) => {
@@ -52,7 +82,9 @@ const Team = () => {
 
   const handleChange = (index, field, value) => {
     setInvites((prev) =>
-      prev.map((invite, i) => (i === index ? { ...invite, [field]: value } : invite))
+      prev.map((invite, i) =>
+        i === index ? { ...invite, [field]: value } : invite
+      )
     );
   };
 
@@ -77,13 +109,37 @@ const Team = () => {
         invites,
       });
       toast.success("Invitations sent successfully!");
-      setInvites([{ email: "", fullName: "", role: "" }]);
-      dispatch(fetchWorkspaceMembers(currentWorkspace.id)); 
+      setInvites([{ email: "", fullName: "", role: roleOptions[0]?.value || "" }]);
+      dispatch(fetchWorkspaceMembers(currentWorkspace.id));
     } catch (error) {
-      toast.error("Failed to send invitations. Please try again.");
+      const message =
+        error?.response?.data?.error ||
+        "Failed to send invitations. Please try again.";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRemove = async (userId) => {
+    if (!currentWorkspace) return;
+  
+    try {
+      // Dispatching removeWorkspaceMember and awaiting its result
+      await dispatch(removeWorkspaceMember({ workspaceId: currentWorkspace.id, userId })).unwrap();
+      toast.success("Member removed successfully");
+    } catch (error) {
+      toast.error(error || "Failed to remove member.");
+    }
+  };
+  
+  
+  const roleColors = {
+    owner: "bg-blue-600",
+    manager: "bg-purple-600",
+    developer: "bg-green-600",
+    designer: "bg-pink-600",
+
   };
 
   return (
@@ -115,7 +171,7 @@ const Team = () => {
             />
             <div className="flex space-x-2">
               <select
-                value={invite.role}
+                value={invite.role || roleOptions[0]?.value || ""}
                 onChange={(e) => handleChange(index, "role", e.target.value)}
                 className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 flex-1 focus:border-blue-500 focus:outline-none transition-colors"
               >
@@ -213,15 +269,13 @@ const Team = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        member.role === "Admin" 
-                          ? "bg-blue-600" 
-                          : member.role === "Manager" 
-                            ? "bg-purple-600" 
-                            : "bg-gray-600"
-                      }`}>
-                        {member.role}
-                      </span>
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        roleColors[member.role] || "bg-gray-600"
+                      }`}
+                    >
+                      {member.role}
+                    </span>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex flex-wrap gap-1">
@@ -245,17 +299,47 @@ const Team = () => {
                         </span>
                       )}
                     </td> */}
-                    <td className="py-3 px-4">
-                      <button 
-                        className={`text-sm px-3 py-1 rounded-md ${
-                          member
-                            ? "text-red-400 hover:bg-red-900/30" 
-                            : "text-green-400 hover:bg-green-900/30"
-                        } transition-colors`}
-                      >
-                        {member ? "Block" : "Unblock"}
-                      </button>
-                    </td>
+                   {member.role !== "owner" && (
+                        <td className="py-3 px-4">
+                          <button 
+                            onClick={() => {
+                              setSelectedMemberId(member.id);
+                              setOpenDialog(true);
+                            }}
+                            className="text-sm text-red-500 hover:text-red-400 bg-transparent hover:bg-red-500/10 px-3 py-1 rounded-md transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      )}
+
+                      <Dialog
+                          open={openDialog}
+                          onClose={() => setOpenDialog(false)}
+                        >
+                          <DialogTitle>Confirm Removal</DialogTitle>
+                          <DialogContent>
+                            <DialogContentText>
+                              Are you sure you want to remove this member from the workspace?
+                            </DialogContentText>
+                          </DialogContent>
+                          <DialogActions>
+                            <Button onClick={() => setOpenDialog(false)} color="inherit">
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                handleRemove(selectedMemberId);
+                                setOpenDialog(false);
+                              }}
+                              color="error"
+                              variant="contained"
+                            >
+                              Remove
+                            </Button>
+                          </DialogActions>
+                        </Dialog>
+
                   </tr>
                 ))}
               </tbody>

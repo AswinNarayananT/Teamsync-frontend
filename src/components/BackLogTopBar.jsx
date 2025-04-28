@@ -4,12 +4,10 @@ import { FaSearch, FaUserFriends, FaUserCircle, FaUserPlus } from 'react-icons/f
 import { MdInsights } from 'react-icons/md';
 import { FiSettings } from 'react-icons/fi';
 import Dropdown from './Dropdown';
-import { fetchEpics } from '../redux/currentworkspace/currentWorkspaceThunk';
+
 
 const BackLogTopBar = ({ showEpic, setShowEpic }) => {
-  const dispatch = useDispatch();
-  const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
-  const { currentProject, epics } = useSelector((state) => state.currentWorkspace);
+  const epics  = useSelector((state) => state.currentWorkspace.epics);
   const epicOptions = epics?.map(epic => ({
     id: epic.id,
     name: epic.title || epic.name || `Epic ${epic.id}`,
