@@ -44,8 +44,14 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="team" element={<Team />} />
           <Route path="settings" element={<UserSettings />} />
-          <Route path="backlog" element={<BacklogBoard />} />
-          
+          <Route
+            path="backlog"
+            element={
+              <DndProvider backend={HTML5Backend}>
+                <BacklogBoard />
+              </DndProvider>
+            }
+          />  
         </Route>
           <Route path="/create-workspace" element={<CreateWorkspace />} />
         </Route>

@@ -1,14 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { createIssue } from "../../redux/currentworkspace/currentWorkspaceThunk";
 
 export default function CreateIssueInput({
   showCreateInput,
   setShowCreateInput,
-  issueType,
-  setIssueType,
-  newIssueText,
-  setNewIssueText,
   isSprintSection = false,
   sprintId = null,
   inputContainerRef
@@ -16,6 +12,22 @@ export default function CreateIssueInput({
   const dispatch = useDispatch();
   const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
   const inputRef = useRef(null);
+  
+  const [issueType, setIssueType] = useState("Task");
+  const [newIssueText, setNewIssueText] = useState("");
+
+  // Close input and reset text on outside click
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (inputContainerRef.current && !inputContainerRef.current.contains(event.target)) {
+        setShowCreateInput(false);
+        setNewIssueText("");
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [inputContainerRef, setShowCreateInput]);
 
   useEffect(() => {
     if (showCreateInput) {
@@ -33,6 +45,7 @@ export default function CreateIssueInput({
 
     if (isSprintSection && sprintId) {
       issueData.sprint = sprintId;
+      console.log(sprintId)
     }
 
     dispatch(createIssue({ issueData, projectId }));

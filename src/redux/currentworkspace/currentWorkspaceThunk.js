@@ -173,6 +173,20 @@ export const fetchProjectIssues = createAsyncThunk(
   }
 );
 
+export const createSprintInProject = createAsyncThunk(
+  "sprints/createInProject",
+  async ({ projectId, sprintData }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/api/v1/project/${projectId}/sprints/`, sprintData);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to create sprint."
+      );
+    }
+  }
+);
+
 export const fetchSprintsInProject = createAsyncThunk(
   "sprints/fetchInProject",
   async (projectId, { rejectWithValue }) => {

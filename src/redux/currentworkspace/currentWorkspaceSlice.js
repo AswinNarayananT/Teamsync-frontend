@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,createSprintInProject } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -128,6 +128,20 @@ const currentWorkspaceSlice = createSlice({
         state.sprints = action.payload;
       })
       .addCase(fetchSprintsInProject.rejected, (state, action) => {
+        state.sprintsLoading = false;
+        state.sprintsError = action.payload;
+      })
+
+      // create sprint
+      .addCase(createSprintInProject.pending, (state) => {
+        state.sprintsLoading = true;
+        state.sprintsError = null;
+      })
+      .addCase(createSprintInProject.fulfilled, (state, action) => {
+        state.sprintsLoading = false;
+        state.sprints.push(action.payload); 
+      })
+      .addCase(createSprintInProject.rejected, (state, action) => {
         state.sprintsLoading = false;
         state.sprintsError = action.payload;
       })

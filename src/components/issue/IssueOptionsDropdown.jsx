@@ -22,13 +22,12 @@ const IssueOptionsDropdown = ({ issue }) => {
         projectId,
         issueData: { sprint: sprintId },
       })).unwrap();
-      setShowOptions(false); // Close after successful move
+      setShowOptions(false);
     } catch (error) {
       console.error("Failed to move issue:", error);
     }
   };
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {

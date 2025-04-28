@@ -9,17 +9,12 @@
 
   const BacklogBoard = () => {
     const dispatch = useDispatch();
-    const { currentProject, epics, issues, issuesLoading, issuesError } = useSelector(
-      (state) => state.currentWorkspace
-    );
-    const sprints = useSelector((state) => state.currentWorkspace.sprints);
-
-
+    const currentProject = useSelector((state) => state.currentWorkspace.currentProject);
+    const issues = useSelector((state) => state.currentWorkspace.issues);
     const [showEpic, setShowEpic] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState("create");
     const [modalType, setModalType] = useState("task");
-
 
     useEffect(() => {
       if (currentProject) {
@@ -51,7 +46,7 @@
     const backlogIssues = issues.filter((issue) => issue.sprint === null);
 
     return (
-      <div className="p-4 bg-[#191919] min-h-screen text-white">
+      <div className="p-4  bg-gray-900 min-h-screen text-white">
         <div className="flex justify-between items-center mb-4">
           <h1 className="text-2xl font-semibold">Backlog</h1>
           <button
@@ -80,8 +75,6 @@
             <div className={showEpic ? 'mt-6' : ''}>
               <IssueSection
                 title="Backlog"
-                visibleItems={backlogIssues.length}
-                totalItems={backlogIssues.length}
                 issues={backlogIssues}
                 isSprintSection={false}
               />

@@ -16,8 +16,6 @@ const SprintList = () => {
             key={sprint.id}
             title={sprint.name}
             dateRange={`${formatDate(sprint.start_date)} – ${formatDate(sprint.end_date)}`}
-            visibleItems={0} 
-            totalItems={sprintIssues.length} 
             issues={sprintIssues} 
             isSprintSection={true}
             sprintId={sprint.id}
