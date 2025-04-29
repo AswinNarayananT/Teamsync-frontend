@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,createSprintInProject } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,createSprintInProject,deleteSprint,editSprint } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -143,6 +143,33 @@ const currentWorkspaceSlice = createSlice({
       })
       .addCase(createSprintInProject.rejected, (state, action) => {
         state.sprintsLoading = false;
+        state.sprintsError = action.payload;
+      })
+
+      // edit sprint
+      .addCase(editSprint.pending, (state) => {
+        state.sprintUpdating = true;
+        state.sprintUpdateError = null;
+      })
+      .addCase(editSprint.fulfilled, (state, action) => {
+        state.sprintUpdating = false;
+        const updatedSprint = action.payload;
+      
+        const index = state.sprints.findIndex(s => s.id === updatedSprint.id);
+        if (index !== -1) {
+          state.sprints[index] = updatedSprint; 
+        }
+      })
+      .addCase(editSprint.rejected, (state, action) => {
+        state.sprintUpdating = false;
+        state.sprintUpdateError = action.payload;
+      })
+
+      // delete sprint
+      .addCase(deleteSprint.fulfilled, (state, action) => {
+        state.sprints = state.sprints.filter(sprint => sprint.id !== action.payload);
+      })
+      .addCase(deleteSprint.rejected, (state, action) => {
         state.sprintsError = action.payload;
       })
 

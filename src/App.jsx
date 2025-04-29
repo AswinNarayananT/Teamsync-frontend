@@ -21,6 +21,7 @@ import Plans from "./components/Plans";
 import BacklogBoard from "./components/BacklogBoard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import Board from "./components/main/Board";
 
 
 
@@ -44,6 +45,14 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="team" element={<Team />} />
           <Route path="settings" element={<UserSettings />} />
+          <Route
+            path="board"
+            element={
+              <DndProvider backend={HTML5Backend}>
+                <Board/>
+              </DndProvider>
+            }
+          />  
           <Route
             path="backlog"
             element={

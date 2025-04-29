@@ -2,19 +2,18 @@
   import { useDispatch, useSelector } from "react-redux";
   import { fetchEpics, fetchProjectIssues,fetchSprintsInProject } from "../redux/currentworkspace/currentWorkspaceThunk";
   import IssueModal from "./IssueModal";
-  import IssueSection from "./IssueSection";
   import EpicSection from "./EpicSection";
   import BackLogTopBar from "./BackLogTopBar";
-  import SprintList from "./issue/SprintList ";
+  import IssueList from "./issue/IssueList ";
 
   const BacklogBoard = () => {
     const dispatch = useDispatch();
     const currentProject = useSelector((state) => state.currentWorkspace.currentProject);
-    const issues = useSelector((state) => state.currentWorkspace.issues);
     const [showEpic, setShowEpic] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState("create");
     const [modalType, setModalType] = useState("task");
+    const [selectedParents, setSelectedParents] = useState([]);
 
     useEffect(() => {
       if (currentProject) {
@@ -27,7 +26,7 @@
         dispatch(fetchSprintsInProject(projectId));
 
       }
-    }, [dispatch, currentProject]);
+    }, [dispatch, currentProject ]);
 
     const openCreateIssueModal = () => {
       setModalType("task");
@@ -43,7 +42,6 @@
       );
     }
 
-    const backlogIssues = issues.filter((issue) => issue.sprint === null);
 
     return (
       <div className="p-4  bg-gray-900 min-h-screen text-white">
@@ -57,7 +55,12 @@
           </button>
         </div>
 
-        <BackLogTopBar showEpic={showEpic} setShowEpic={setShowEpic} />
+        <BackLogTopBar
+          showEpic={showEpic}
+          setShowEpic={setShowEpic}
+          selectedParents={selectedParents}
+          setSelectedParents={setSelectedParents}
+        />
 
         <div className="flex mt-4">
           {/* Epic Section */}
@@ -68,17 +71,8 @@
           )}
 
         {/* Issue Section */}
-          <div className={`flex-1 relative overflow-visible ${showEpic ? 'm-2' : 'space-y-6 m-1'}`}>
-          
-            <SprintList/>
-
-            <div className={showEpic ? 'mt-6' : ''}>
-              <IssueSection
-                title="Backlog"
-                issues={backlogIssues}
-                isSprintSection={false}
-              />
-            </div>
+          <div className={`flex-1 relative overflow-visible ${showEpic ? 'm-2' : 'space-y-6 m-1'}`}>      
+          <IssueList selectedParents={selectedParents} />
           </div>
         </div>
 

@@ -4,24 +4,29 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CreateIssueInput from "./issue/CreateIssueInput";
 import IssueItem from "./issue/IssueItem";
+import SprintEditModal from "./sprint/SprintEditModal";
 import { useDrop } from 'react-dnd';
-import { updateIssue,createSprintInProject } from "../redux/currentworkspace/currentWorkspaceThunk";
+import { updateIssue, createSprintInProject, deleteSprint, editSprint } from "../redux/currentworkspace/currentWorkspaceThunk";
 
 function IssueSection({
   title,
   dateRange,
   issues,
   isSprintSection,
-  sprintId,
+  sprint,
 }) {
   const dispatch = useDispatch();
   const [expanded, setExpanded] = useState(true);
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [checked, setChecked] = useState(false);
   const [individualChecked, setIndividualChecked] = useState({});
-  
-  const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  const menuRef = useRef(null);
   const inputContainerRef = useRef(null);
+  const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
+  const sprintId = isSprintSection && sprint ? sprint.id : null;
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "issue",
@@ -43,8 +48,18 @@ function IssueSection({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (inputContainerRef.current && !inputContainerRef.current.contains(event.target)) {
+      if (
+        inputContainerRef.current &&
+        !inputContainerRef.current.contains(event.target)
+      ) {
         setShowCreateInput(false);
+      }
+
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target)
+      ) {
+        setShowMenu(false);
       }
     };
 
@@ -72,27 +87,44 @@ function IssueSection({
 
   const handleActionClick = () => {
     if (isSprintSection) {
-      // This is an actual sprint — Start the sprint
-      onStartSprint?.();
+       if (sprint?.id) {
+        dispatch(editSprint({ sprintId: sprint.id, sprintData: { is_active: true } }));
+      }
     } else {
-      if (projectId) { 
+      if (projectId) {
         dispatch(createSprintInProject({ projectId, sprintData: {} }));
       }
     }
   };
-  
 
- 
+  const handleMoreClick = () => {
+    if (isSprintSection) {
+      setShowMenu((prev) => !prev);
+    }
+  };
+
+  const handleEdit = () => {
+    setShowEditModal(true);
+    setShowMenu(false);
+  };
+
+  const handleDelete = () => {
+    if (sprintId && projectId) {
+      dispatch(deleteSprint({ sprintId, projectId }));
+    }
+    setShowMenu(false);
+  };
+
   const visibleItems = issues.length;
   const totalItems = issues.length;
 
   return (
     <div
       ref={drop}
-      className={` bg-[#202020] rounded-2xl shadow-md mb-6 border border-gray-700 ${isOver ? "bg-gray-800" : ""}`}
+      className={`bg-[#202020] rounded-2xl shadow-md mb-6 border border-gray-700 ${isOver ? "bg-gray-800" : ""}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-850">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gray-850 relative">
         <div className="flex items-center space-x-3">
           <input
             type="checkbox"
@@ -111,16 +143,42 @@ function IssueSection({
           <span className="text-xs text-gray-500">({visibleItems} of {totalItems} visible)</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 relative">
           <button
             onClick={handleActionClick}
             className="text-sm px-3 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
           >
-            {isSprintSection ? "Start Sprint" : "Create Sprint"}
+           {isSprintSection
+    ? sprint?.is_active
+      ? "Complete Sprint"
+      : "Start Sprint"
+    : "Create Sprint"}
           </button>
-          <button className="text-gray-400 hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-gray-800">
-            <MoreHorizIcon className="w-5 h-5" />
-          </button>
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={handleMoreClick}
+              className="text-gray-400 hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-gray-800"
+            >
+              <MoreHorizIcon className="w-5 h-5" />
+            </button>
+
+            {isSprintSection && showMenu && (
+              <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg py-1 z-10">
+                <button
+                  onClick={handleEdit}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -144,7 +202,7 @@ function IssueSection({
             )}
           </div>
 
-          {/* Create Input / Button */}
+          {/* Create Input */}
           <CreateIssueInput
             showCreateInput={showCreateInput}
             setShowCreateInput={setShowCreateInput}
@@ -153,6 +211,16 @@ function IssueSection({
             inputContainerRef={inputContainerRef}
           />
         </>
+      )}
+
+      {showEditModal && sprint && (
+        <SprintEditModal
+          sprint={sprint}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={(updatedSprintData) => {
+            dispatch(editSprint({ projectId, sprintId: sprint.id, sprintData: updatedSprintData }));
+          }}
+        />
       )}
     </div>
   );

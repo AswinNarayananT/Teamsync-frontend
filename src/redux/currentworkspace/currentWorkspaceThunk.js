@@ -201,6 +201,50 @@ export const fetchSprintsInProject = createAsyncThunk(
   }
 );
 
+export const fetchActiveSprintIssues = createAsyncThunk(
+  "issues/fetchActiveSprintIssues",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/project/${projectId}/active-sprint-issues/`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch issues for active sprint."
+      );
+    }
+  }
+);
+
+
+export const editSprint = createAsyncThunk(
+  "sprints/edit",
+  async ({ sprintId, sprintData }, { rejectWithValue }) => {
+    try {
+      const response = await api.patch(`/api/v1/project/sprints/${sprintId}/`, sprintData);
+      return response.data; 
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to update sprint."
+      );
+    }
+  }
+);
+
+export const deleteSprint = createAsyncThunk(
+  "sprints/delete",
+  async ({ sprintId, projectId }, { dispatch, rejectWithValue }) => {
+    try {
+      await api.delete(`/api/v1/project/sprints/${sprintId}/`);
+      dispatch(fetchProjectIssues(projectId))
+      return sprintId; 
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to delete sprint."
+      );
+    }
+  }
+);
+
 export const assignParentEpic = createAsyncThunk(
   'issues/assignParentEpic',
   async ({ issueId, epicId }, { rejectWithValue }) => {
