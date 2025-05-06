@@ -4,7 +4,7 @@ import EpicSelector from './EpicSelector';
 import StatusDropdown from './StatusDropdown';
 import AssigneeSelector from './AssigneeSelector';
 import IssueOptionsDropdown from './IssueOptionsDropdown';
-import IssueModal from '../IssueModal';
+import IssueDetail from './IssueDetail';
 
 const IssueItem = ({
   issue,
@@ -19,22 +19,12 @@ const IssueItem = ({
     }),
   }));
 
-  const [showEpicDropdownFor, setShowEpicDropdownFor] = useState(null);
-  const [showStatusDropdownFor, setShowStatusDropdownFor] = useState(null);
-  const [showAssigneeDropdownFor, setShowAssigneeDropdownFor] = useState(null);
-  const [showOptionsDropdownFor, setShowOptionsDropdownFor] = useState(null);
-  
   // Modal state for displaying the IssueModal
   const [isIssueModalOpen, setIsIssueModalOpen] = useState(false);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
 
-  const epicDropdownRef = useRef(null);
-  const statusDropdownRef = useRef(null);
-  const assigneeDropdownRef = useRef(null);
-  const optionsDropdownRef = useRef(null);
-
-  const handleIssueTitleClick = (issueId) => {
-    setSelectedIssueId(issueId);
+  const handleIssueTitleClick = (issue) => {
+    setSelectedIssueId(issue.id);
     setIsIssueModalOpen(true); // Open the modal when the issue title is clicked
   };
 
@@ -57,7 +47,7 @@ const IssueItem = ({
         </span>
         <span
           className="flex-1 font-medium text-gray-100 truncate"
-          onClick={() => handleIssueTitleClick(issue.id)} // Open modal on click
+          onClick={() => handleIssueTitleClick(issue)} 
         >
           {issue.title}
         </span>
@@ -65,39 +55,26 @@ const IssueItem = ({
         <div className="flex items-center gap-3 flex-shrink-0">
           <EpicSelector
             issue={issue}
-            showEpicDropdownFor={showEpicDropdownFor}
-            setShowEpicDropdownFor={setShowEpicDropdownFor}
-            epicDropdownRef={epicDropdownRef}
           />
           <StatusDropdown
             issue={issue}
-            showStatusDropdownFor={showStatusDropdownFor}
-            setShowStatusDropdownFor={setShowStatusDropdownFor}
-            statusDropdownRef={statusDropdownRef}
           />
           <span className="mx-1 text-gray-600">•</span>
           <AssigneeSelector
             issue={issue}
-            showAssigneeDropdownFor={showAssigneeDropdownFor}
-            setShowAssigneeDropdownFor={setShowAssigneeDropdownFor}
-            assigneeDropdownRef={assigneeDropdownRef}
           />
           <IssueOptionsDropdown
             issue={issue}
-            showOptionsDropdownFor={showOptionsDropdownFor}
-            setShowOptionsDropdownFor={setShowOptionsDropdownFor}
-            optionsDropdownRef={optionsDropdownRef}
           />
         </div>
       </div>
 
       {/* Issue Modal */}
       {isIssueModalOpen && selectedIssueId && (
-        <IssueModal
+        <IssueDetail
           isOpen={isIssueModalOpen}
-          onClose={() => setIsIssueModalOpen(false)} // Close the modal
+          onClose={() => setIsIssueModalOpen(false)} 
           issueId={selectedIssueId}
-          mode="edit"
         />
       )}
     </>

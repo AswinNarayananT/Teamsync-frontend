@@ -22,7 +22,7 @@ import BacklogBoard from "./components/BacklogBoard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Board from "./components/main/Board";
-import Notification from "./components/realtime/Notification";
+import ProjectList from "./components/project/ProjectList";
 
 
 
@@ -46,7 +46,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="team" element={<Team />} />
           <Route path="settings" element={<UserSettings />} />
-          <Route path="notification" element={<Notification />} />
+          <Route path="projects" element={<ProjectList />} />
           <Route
             path="board"
             element={

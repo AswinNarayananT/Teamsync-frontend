@@ -1,24 +1,41 @@
+import { useEffect, useRef, useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useDispatch } from "react-redux";
 import { updateIssueStatus } from "../../redux/currentworkspace/currentWorkspaceThunk";
 
-export default function StatusDropdown({
-  issue,
-  showStatusDropdownFor,
-  setShowStatusDropdownFor,
-  statusDropdownRef,
-}) {
+export default function StatusDropdown({ issue }) {
   const dispatch = useDispatch();
-  const isOpen = showStatusDropdownFor === issue.id;
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   const toggleStatusDropdown = () => {
-    setShowStatusDropdownFor(isOpen ? null : issue.id);
+    setIsOpen((prev) => !prev);
   };
 
   const handleStatusChange = (issueId, status) => {
     dispatch(updateIssueStatus({ issueId, status }));
-    setShowStatusDropdownFor(null);
+    setIsOpen(false); // close dropdown
   };
+
+  // Detect click outside dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   const statusOptions = [
     { id: "todo", name: "To Do" },
@@ -28,12 +45,11 @@ export default function StatusDropdown({
   ];
 
   const filteredOptions = statusOptions.filter(
-    (option) =>
-      option.id !== issue.status.toLowerCase().replace(" ", "_")
+    (option) => option.id !== issue.status.toLowerCase().replace(" ", "_")
   );
 
   return (
-    <div className="relative w-32" ref={isOpen ? statusDropdownRef : null}>
+    <div className="relative w-32" ref={dropdownRef}>
       {/* Button */}
       <div
         onClick={toggleStatusDropdown}

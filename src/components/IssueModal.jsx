@@ -1,126 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { IoMdClose } from 'react-icons/io';
-import { createIssue, updateIssue,fetchIssueById } from '../redux/currentworkspace/currentWorkspaceThunk';
 import { toast } from 'react-toastify';
-import api from '../api';
+import {
+  createIssue,
+  updateIssue
+} from '../redux/currentworkspace/currentWorkspaceThunk';
+import StatusDropdown from './issue/StatusDropdown';
+import EpicSelector from './issue/EpicSelector';
+import AssigneeSelector from './issue/AssigneeSelector';
 
-const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
+export default function IssueModal({
+  isOpen,
+  onClose,
+  issueId,
+  mode,
+  projectId
+}) {
   const dispatch = useDispatch();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState('todo');
-  const [issueType, setIssueType] = useState('task');
-  const [assignee, setAssignee] = useState(null);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [dateError, setDateError] = useState('');
-  const [parentId, setParentId] = useState(null);
 
-  const projectMembers = useSelector((state) => state.currentWorkspace.members);
-  const epics = useSelector((state) => state.currentWorkspace.epics);
+  // Grab both lists
+  const epics = useSelector((s) => s.currentWorkspace.epics) || [];
+  const issues = useSelector((s) => s.currentWorkspace.issues) || [];
+  const members = useSelector((s) => s.currentWorkspace.members) || [];
 
-  const fetchIssueDetails = async () => {
-    if (issueId && mode === 'edit') {
-      setIsLoading(true);
-      try {
-        const issueData = await dispatch(fetchIssueById(issueId)).unwrap(); 
-  
-        setTitle(issueData.title);
-        setDescription(issueData.description || '');
-        setStatus(issueData.status);
-        setIssueType(issueData.type);
-        setAssignee(issueData.assignee);
-        setStartDate(issueData.start_date || '');
-        setEndDate(issueData.end_date || '');
-        setParentId(issueData.parent || null);
-      } catch (error) {
-        toast.error("Failed to load issue details");
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setTitle('');
-      setDescription('');
-      setStatus('todo');
-      setIssueType('task');
-      setAssignee(null);
-      setStartDate('');
-      setEndDate('');
-      setDateError('');
-      setParentId(null);
-    }
-  };
-
-  useEffect(() => {
-
-    if (isOpen) {
-      fetchIssueDetails();
-    }
-  }, [issueId, mode, isOpen]);
-
-  useEffect(() => {
-    if (issueType === 'epic') {
-      setParentId(null);
-    }
-  }, [issueType]);
-
-  useEffect(() => {
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      
-      if (end < start) {
-        setDateError('End date cannot be before start date');
-      } else {
-        setDateError('');
-      }
-    } else {
-      setDateError('');
-    }
-  }, [startDate, endDate]);
-
-  const handleStartDateChange = (e) => {
-    setStartDate(e.target.value);
-
-    if (endDate && new Date(e.target.value) > new Date(endDate)) {
-      setEndDate('');
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (dateError) {
-      toast.error(dateError);
-      return;
-    }
-
-    const formData = {
-      title,
-      description,
-      status,
-      type: issueType,
-      assignee,
-      start_date: startDate || null,
-      end_date: endDate || null,
-      parent: parentId,
-    };
-
-    try {
-      if (mode === 'create') {
-        dispatch(createIssue({ issueData: formData, projectId }));
-        toast.success('Issue created successfully!');
-      } else if (mode === 'edit') {
-        dispatch(updateIssue({ issueId, issueData: formData, projectId }));
-        toast.success('Issue updated successfully!');
-      }
-      onClose();
-    } catch (error) {
-      toast.error('Failed to save the issue');
-      console.error(error);
-    }
-  };
+  // Find the “issue” by ID, falling back to the epics list
+  const issue = useSelector((s) => {
+    const fromIssues = issues.find((i) => i.id === issueId);
+    if (fromIssues) return fromIssues;
+    return epics.find((e) => e.id === issueId);
+  });
 
   const statusOptions = [
     { value: 'todo', label: 'To Do', color: 'bg-blue-500' },
@@ -129,269 +38,327 @@ const IssueModal = ({ isOpen, onClose, issueId, mode, projectId }) => {
     { value: 'done', label: 'Done', color: 'bg-green-500' }
   ];
 
-  const typeOptions = [
-    { value: 'task', label: 'Task', icon: '📋' },
-    { value: 'bug', label: 'Bug', icon: '🐞' },
-    { value: 'story', label: 'Story', icon: '📝' },
-    { value: 'epic', label: 'Epic', icon: '🏆' }
-  ];
+  // Form state
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState('todo');
+  const [issueType, setIssueType] = useState('task');
+  const [assignee, setAssignee] = useState('');
+  const [parentId, setParentId] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [dateError, setDateError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Initialize whenever modal opens, or the issue/epics change
+  useEffect(() => {
+    if (!isOpen) return;
+    if (mode === 'edit' && issue) {
+      setTitle(issue.title || '');
+      setDescription(issue.description || '');
+      setStatus(issue.status || 'todo');
+      setIssueType(issue.type || 'task');
+      setAssignee(issue.assignee || '');
+      setParentId(issue.parent || '');
+      setStartDate(issue.start_date || '');
+      setEndDate(issue.end_date || '');
+    } else {
+      // create-mode defaults
+      setTitle('');
+      setDescription('');
+      setStatus('todo');
+      setIssueType('task');
+      setAssignee('');
+      setParentId('');
+      setStartDate('');
+      setEndDate('');
+      setDateError('');
+    }
+  }, [isOpen, mode, issue, epics]);
+
+  // If user selects “epic” type, clear parent
+  useEffect(() => {
+    if (issueType === 'epic') setParentId('');
+  }, [issueType]);
+
+  // Validate dates
+  useEffect(() => {
+    if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+      setDateError('End date cannot be before start date');
+    } else {
+      setDateError('');
+    }
+  }, [startDate, endDate]);
+
+  const handleSubmit = async () => {
+    if (dateError) {
+      toast.error(dateError);
+      return;
+    }
+    const formData = {
+      title,
+      description,
+      status,
+      type: issueType,
+      assignee: assignee || null,
+      parent: parentId || null,
+      start_date: startDate || null,
+      end_date: endDate || null
+    };
+    try {
+      setIsLoading(true);
+      if (mode === 'create') {
+        await dispatch(createIssue({ issueData: formData, projectId })).unwrap();
+        toast.success('Issue created!');
+      } else {
+        await dispatch(
+          updateIssue({ issueId: issue.id, issueData: formData, projectId })
+        ).unwrap();
+        toast.success('Issue updated!');
+      }
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast.error('Save failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
   const today = new Date().toISOString().split('T')[0];
-
-  const minEndDate = startDate || today;
+  const minEnd = startDate || today;
 
   return (
-    isOpen && (
-      <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-30 backdrop-blur-sm">
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden">
-          {/* Header */}
-          <div className="flex justify-between items-center px-6 py-4 bg-gray-800 border-b border-gray-700">
-            <h2 className="text-xl font-bold tracking-tight">
-              {mode === 'create' ? 'Create Issue' : mode === 'edit' ? 'Edit Issue' : 'View Issue'}
-            </h2>
-            <button onClick={onClose} className="hover:bg-gray-700 p-1 rounded-md transition-colors duration-200">
-              <IoMdClose size={24} />
-            </button>
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <div className="bg-gray-900 text-white rounded-lg shadow-xl w-full max-w-3xl overflow-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700">
+          <h2 className="text-xl font-bold">
+            {mode === 'create' ? 'Create Issue' : 'Edit Issue'}
+          </h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-700 rounded">
+            <IoMdClose size={24} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-6">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Title
+            </label>
+            <input
+              type="text"
+              className="w-full p-2 bg-gray-800 border border-gray-600 rounded"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
           </div>
 
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Left column - Main inputs */}
-              <div className="flex-1 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    disabled={mode === 'view'}
-                    placeholder="Issue title"
-                    required
-                  />
-                </div>
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Description
+            </label>
+            <textarea
+              className="w-full p-2 bg-gray-800 border border-gray-600 rounded h-32"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
-                  <textarea
-                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white h-32 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    disabled={mode === 'view'}
-                    placeholder="Describe the issue in detail..."
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={startDate}
-                      onChange={handleStartDateChange}
-                      disabled={mode === 'view'}
-                      min={today}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">End Date</label>
-                    <input
-                      type="date"
-                      className={`w-full p-2 border ${dateError ? 'border-red-500' : 'border-gray-600'} rounded-md bg-gray-800 text-white focus:ring-2 ${dateError ? 'focus:ring-red-500' : 'focus:ring-blue-500'} focus:border-transparent`}
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      disabled={mode === 'view' || !startDate}
-                      min={minEndDate}
-                    />
-                    {!startDate && endDate && (
-                      <p className="text-yellow-400 text-xs mt-1">Please select a start date first</p>
-                    )}
-                    {dateError && (
-                      <p className="text-red-500 text-xs mt-1">{dateError}</p>
-                    )}
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left */}
+            <div className="space-y-4">
+              {/* Issue Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Issue Type
+                </label>
+                <select
+                  className="w-full p-2 bg-gray-800 border border-gray-600 rounded"
+                  value={issueType}
+                  onChange={(e) => setIssueType(e.target.value)}
+                >
+                  <option value="task">Task</option>
+                  <option value="bug">Bug</option>
+                  <option value="story">Story</option>
+                  <option value="epic">Epic</option>
+                </select>
               </div>
 
-              {/* Right column - Selections */}
-              <div className="md:w-64 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Status</label>
-                  <div className="relative">
-                    <select
-                      className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      disabled={mode === 'view'}
-                    >
-                      {statusOptions.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-3 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                  {/* Status indicator */}
-                  <div className="mt-2 flex items-center">
-                    <div className={`w-3 h-3 rounded-full ${statusOptions.find(o => o.value === status)?.color || 'bg-gray-500'} mr-2`}></div>
-                    <span className="text-sm">{statusOptions.find(o => o.value === status)?.label}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Issue Type</label>
-                  <div className="relative">
-                    {mode === 'view' || mode === 'edit' ? (
-                      <div className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-white">
-                        <span className="mr-2">{typeOptions.find(t => t.value === issueType)?.icon}</span>
-                        {issueType.charAt(0).toUpperCase() + issueType.slice(1)}
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <select
-                          className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={issueType}
-                          onChange={(e) => setIssueType(e.target.value)}
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Status
+                </label>
+                {mode === 'edit' ? (
+                  <StatusDropdown issue={{ id: issue.id, status }} />
+                ) : (
+                  <>
+                    <div className="relative">
+                      <select
+                        className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded bg-gray-800 text-white"
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                      >
+                        {statusOptions.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-3 pointer-events-none">
+                        <svg
+                          className="w-4 h-4 text-gray-400"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                         >
-                          {typeOptions.map(option => (
-                            <option key={option.value} value={option.value}>{option.icon} {option.label}</option>
-                          ))}
-                        </select>
-                        <div className="absolute right-3 top-3 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
                       </div>
-                    )}
-                  </div>
-                  {/* Type indicator */}
-                  <div className="mt-2 flex items-center">
-                    <span className="text-lg mr-2">{typeOptions.find(t => t.value === issueType)?.icon}</span>
-                    <span className="text-sm">{typeOptions.find(t => t.value === issueType)?.label}</span>
-                  </div>
-                </div>
+                    </div>
+                    <div className="mt-2 flex items-center">
+                      <div
+                        className={`w-3 h-3 rounded-full ${
+                          statusOptions.find((o) => o.value === status)?.color
+                        } mr-2`}
+                      />
+                      <span className="text-sm">
+                        {statusOptions.find((o) => o.value === status)?.label}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
 
-                {/* Parent Epic Field - Show for all types except Epic */}
+              {/* Dates */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Parent Epic
-                    {issueType === 'epic' && <span className="text-gray-500 text-xs ml-2">(Not applicable)</span>}
+                    Start Date
                   </label>
-                  <div className="relative">
-                    {issueType === 'epic' ? (
-                      <div className="w-full p-2 border border-gray-600 rounded-md bg-gray-700 text-gray-400 cursor-not-allowed">
-                        Not applicable for Epics
-                      </div>
-                    ) : (
-                      <>
-                        <select
-                          className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={parentId || ''}
-                          onChange={(e) => setParentId(e.target.value ? Number(e.target.value) : null)}
-                          disabled={mode === 'view' || issueType === 'epic'}
-                        >
-                          <option value="">No parent epic</option>
-                          {epics.map((epic) => (
-                            <option key={epic.id} value={epic.id}>
-                              {epic.title}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="absolute right-3 top-3 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  {/* Parent Epic indicator */}
-                  {parentId && issueType !== 'epic' && (
-                    <div className="mt-2 flex items-center">
-                      <span className="text-lg mr-2">🏆</span>
-                      <span className="text-sm truncate">
-                        {epics.find(epic => epic.id === parentId)?.title || 'Selected Epic'}
-                      </span>
-                    </div>
-                  )}
+                  <input
+                    type="date"
+                    className="w-full p-2 bg-gray-800 border border-gray-600 rounded"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    min={today}
+                  />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Assignee</label>
-                  <div className="relative">
-                    <select
-                      className="w-full p-2 pl-4 pr-8 border border-gray-600 rounded-md bg-gray-800 text-white appearance-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={assignee || ''}
-                      onChange={(e) => setAssignee(e.target.value ? Number(e.target.value) : null)}
-                      disabled={mode === 'view'}
-                    >
-                      <option value="">Unassigned</option>
-                      {projectMembers.map(member => (
-                        <option key={member.user_id} value={member.user_id}>
-                          {member.user_email}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-3 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                  {/* Assignee indicator */}
-                  {assignee && (
-                    <div className="mt-2 flex items-center">
-                      <div className="bg-blue-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">
-                        {(projectMembers.find(m => m.user_id === assignee)?.user_email || '').charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-sm truncate">
-                        {projectMembers.find(m => m.user_id === assignee)?.user_email || 'Selected User'}
-                      </span>
-                    </div>
-                  )}
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    className={`w-full p-2 bg-gray-800 border ${
+                      dateError ? 'border-red-500' : 'border-gray-600'
+                    } rounded`}
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={minEnd}
+                  />
                 </div>
               </div>
+              {dateError && <p className="text-red-500 text-sm">{dateError}</p>}
             </div>
 
-            {/* Footer */}
-            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-700">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors duration-200"
-              >
-                Cancel
-              </button>
-              {mode !== 'view' && (
-                <button
-                  onClick={handleSubmit}
-                  className={`px-4 py-2 ${dateError ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500'} text-white rounded-md transition-colors duration-200 flex items-center`}
-                  disabled={isLoading || !!dateError}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      {mode === 'create' ? 'Creating...' : 'Updating...'}
-                    </>
-                  ) : (
-                    mode === 'create' ? 'Create Issue' : 'Update Issue'
+            {/* Right */}
+            <div className="space-y-4">
+              {/* Parent Epic */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Parent Epic
+                  {issueType === 'epic' && (
+                    <span className="text-gray-500 text-xs ml-2">(N/A)</span>
                   )}
-                </button>
-              )}
+                </label>
+                {issueType === 'epic' ? (
+                  <div className="p-2 bg-gray-800 border border-gray-600 rounded text-gray-400">
+                    N/A for Epic
+                  </div>
+                ) : mode === 'edit' ? (
+                  <EpicSelector issue={issue} />
+                ) : (
+                  <select
+                    className="w-full p-2 bg-gray-800 border border-gray-600 rounded"
+                    value={parentId}
+                    onChange={(e) => setParentId(e.target.value)}
+                  >
+                    <option value="">No parent epic</option>
+                    {epics.map((e) => (
+                      <option key={e.id} value={e.id}>
+                        {e.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {/* Assignee */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Assignee
+                </label>
+                {mode === 'edit' ? (
+                  <AssigneeSelector issue={issue} />
+                ) : (
+                  <select
+                    className="w-full p-2 bg-gray-800 border border-gray-600 rounded"
+                    value={assignee}
+                    onChange={(e) => setAssignee(e.target.value)}
+                  >
+                    <option value="">Unassigned</option>
+                    {members.map((m) => (
+                      <option key={m.user_id} value={m.user_id}>
+                        {m.user_email}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    )
-  );
-};
 
-export default IssueModal;
+        {/* Footer */}
+        <div className="flex justify-end items-center px-6 py-4 bg-gray-800 border-t border-gray-700 gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded"
+            disabled={isLoading}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className={`px-4 py-2 rounded text-white ${
+              dateError || isLoading
+                ? 'bg-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-500'
+            }`}
+            disabled={!!dateError || isLoading}
+          >
+            {isLoading
+              ? mode === 'create'
+                ? 'Creating…'
+                : 'Updating…'
+              : mode === 'create'
+              ? 'Create Issue'
+              : 'Update Issue'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

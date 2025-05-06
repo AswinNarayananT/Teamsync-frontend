@@ -184,19 +184,29 @@ const currentWorkspaceSlice = createSlice({
 
       .addCase(assignAssigneeToIssue.fulfilled, (state, action) => {
         const { id: issueId, assignee } = action.payload;
-        const index = state.issues.findIndex(issue => issue.id === issueId);
-      
-        if (index !== -1) {
-          state.issues[index].assignee = assignee;
+        const issueIndex = state.issues.findIndex(i => i.id === issueId);
+        if (issueIndex !== -1) {
+          state.issues[issueIndex].assignee = assignee;
+          return;
+        }
+
+        const epicIndex = state.epics.findIndex(e => e.id === issueId);
+        if (epicIndex !== -1) {
+          state.epics[epicIndex].assignee = assignee;
         }
       })
 
       .addCase(updateIssueStatus.fulfilled, (state, action) => {
         const { issue_id, status } = action.payload;
-        const index = state.issues.findIndex(issue => issue.id === issue_id);
+        const issueIndex = state.issues.findIndex(i => i.id === issue_id);
+        if (issueIndex !== -1) {
+          state.issues[issueIndex].status = status;
+          return;
+        }
 
-        if (index !== -1) {
-          state.issues[index].status = status; 
+        const epicIndex = state.epics.findIndex(e => e.id === issue_id);
+        if (epicIndex !== -1) {
+          state.epics[epicIndex].status = status;
         }
       })
       .addCase(updateIssueStatus.rejected, (state, action) => {

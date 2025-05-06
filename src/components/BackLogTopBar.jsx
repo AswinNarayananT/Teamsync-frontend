@@ -5,8 +5,17 @@ import { MdInsights } from 'react-icons/md';
 import { FiSettings } from 'react-icons/fi';
 import { Switch } from '@mui/material';
 
-
-const BackLogTopBar = ({ showEpic, setShowEpic, selectedParents, setSelectedParents }) => {
+const BackLogTopBar = ({
+  showEpic,
+  setShowEpic,
+  selectedParents,
+  setSelectedParents,
+  showSprintControls = false,
+  selectedSprint,
+  setSelectedSprint,
+  onCompleteSprint,
+  sprintOptions = []
+}) => {
   const epics = useSelector((state) => state.currentWorkspace.epics) || [];
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
@@ -33,7 +42,6 @@ const BackLogTopBar = ({ showEpic, setShowEpic, selectedParents, setSelectedPare
     setSelectedParents(newSelectedParents);
   };
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -46,6 +54,7 @@ const BackLogTopBar = ({ showEpic, setShowEpic, selectedParents, setSelectedPare
 
   return (
     <div className="flex flex-wrap md:flex-nowrap items-center justify-between px-4 py-2 w-full bg-[#191919] gap-4">
+
       {/* Left Section */}
       <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
         {/* Search */}
@@ -84,7 +93,7 @@ const BackLogTopBar = ({ showEpic, setShowEpic, selectedParents, setSelectedPare
           </button>
 
           {showDropdown && (
-            <div className="absolute z-10 mt-1  rounded-md bg-[#2a2a2a] shadow-lg ring-1 ring-black ring-opacity-5">
+            <div className="absolute z-10 mt-1 rounded-md bg-[#2a2a2a] shadow-lg ring-1 ring-black ring-opacity-5">
               <div className="py-1 max-h-64 overflow-y-auto text-white text-sm">
                 {epicOptions.map((epic) => (
                   <label
@@ -115,43 +124,66 @@ const BackLogTopBar = ({ showEpic, setShowEpic, selectedParents, setSelectedPare
                     onChange={handleNoEpicChange}
                     className="cursor-pointer"
                   />
-                  No Epic 
+                  No Epic
                 </label>
 
-              {/* Show Epic Panel with Small Switch */}
-              <div className="border-t border-gray-600 mt-1 px-3 py-2 flex items-center gap-2">
-                <Switch
-                  checked={showEpic}
-                  onChange={handleShowEpicChange}
-                  color="primary"
-                  size="small" // Makes the switch smaller
-                  sx={{
-                    '& .MuiSwitch-switchBase.Mui-checked': {
-                      color: '#00e676', // Green color when checked
-                    },
-                    '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                      backgroundColor: '#00e676', // Green track when checked
-                    },
-                  }}
-                />
-                <span className="text-white text-sm whitespace-nowrap">Epic Panel</span> {/* Ensures text stays on one line */}
-              </div>
+                {/* Show Epic Panel */}
+                <div className="border-t border-gray-600 mt-1 px-3 py-2 flex items-center gap-2">
+                  <Switch
+                    checked={showEpic}
+                    onChange={handleShowEpicChange}
+                    color="primary"
+                    size="small"
+                    sx={{
+                      '& .MuiSwitch-switchBase.Mui-checked': {
+                        color: '#00e676',
+                      },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: '#00e676',
+                      },
+                    }}
+                  />
+                  <span className="text-white text-sm whitespace-nowrap">Epic Panel</span>
+                </div>
               </div>
             </div>
           )}
+        </div>
+        <div>
+        {showSprintControls && (
+          <>
+            {/* Sprint Dropdown */}
+            <select
+              value={selectedSprint}
+              onChange={(e) => setSelectedSprint(e.target.value)}
+              className="bg-[#2a2a2a] text-white text-sm px-2 py-1 border border-gray-600 rounded"
+            >
+              <option value="" disabled>Select Sprint</option>
+              {sprintOptions.map((sprint) => (
+                <option key={sprint.id} value={sprint.id}>
+                  {sprint.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
         </div>
       </div>
 
       {/* Right Section */}
       <div className="flex items-center gap-2 ml-auto">
-        <button className="flex items-center gap-1 bg-[#323232c7] text-white text-sm px-3 py-1 rounded hover:bg-[#1e1e1e]">
-          <MdInsights />
-          Insights
-        </button>
-        <button className="flex items-center gap-1 bg-[#323232c7] text-white text-sm px-3 py-1 rounded hover:bg-[#1e1e1e]">
-          <FiSettings />
-          View Settings
-        </button>
+        {showSprintControls && (
+          <>
+            {/* Complete Sprint Button */}
+            <button
+              className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700"
+              onClick={onCompleteSprint}
+            >
+              Complete Sprint
+            </button>
+          </>
+        )}
+
       </div>
     </div>
   );

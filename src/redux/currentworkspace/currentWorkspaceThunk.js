@@ -276,13 +276,47 @@ export const assignAssigneeToIssue = createAsyncThunk(
 );
 
 export const updateIssueStatus = createAsyncThunk(
-  "issues/updateIssueStatus",  
-  async ({ issueId, status }, { rejectWithValue }) => {
+"issues/updateIssueStatus",  
+async ({ issueId, status }, { rejectWithValue }) => {
+  try {
+    const response = await api.patch(`/api/v1/project/issue/${issueId}/status/`, {
+      status: status,
+    });
+    return response.data;  
+  } catch (error) {
+    return rejectWithValue(error.response?.data || error.message);
+  }
+}
+);
+
+// Fetch all attachments for a specific issue
+export const fetchAttachments = createAsyncThunk(
+  'attachments/fetch',
+  async (issueId, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/api/v1/project/issue/${issueId}/status/`, {
-        status: status,
-      });
-      return response.data;  
+      const response = await api.get(`/api/v1/project/issues/${issueId}/attachments/`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const createAttachment = createAsyncThunk(
+  'attachments/create',
+  async ({ issueId, formData }, { rejectWithValue }) => {
+    try {
+      // Log the formData to verify
+      formData.forEach((v, k) => console.log(k, v));
+
+      const response = await api.post(
+        `/api/v1/project/issues/${issueId}/attachments/`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }
+      );
+      return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }

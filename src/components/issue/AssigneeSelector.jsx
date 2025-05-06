@@ -4,42 +4,42 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import { useState, useEffect, useRef } from "react";
-import Avatar from '@mui/material/Avatar';
 
-const AssigneeSelector = ({ issue, showAssigneeDropdownFor, setShowAssigneeDropdownFor, assigneeDropdownRef }) => {
+const AssigneeSelector = ({ issue }) => {
   const dispatch = useDispatch();
   const members = useSelector((state) => state.currentWorkspace.members);
+
+  const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMembers, setFilteredMembers] = useState([]);
   const [isHovering, setIsHovering] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState("right");
-  const [dropdownWidth, setDropdownWidth] = useState("18rem"); 
+  const [dropdownWidth, setDropdownWidth] = useState("18rem");
 
-  const iconRef = useRef();
+  const dropdownRef = useRef(null);
+  const iconRef = useRef(null);
 
-  const handleAssignMember = (issueId, memberId) => {
-    if (!issueId || !memberId) return;
-    dispatch(assignAssigneeToIssue({ issueId, memberId }));
-    setShowAssigneeDropdownFor(null);
-    setSearchTerm("");
-  };
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target) &&
+        iconRef.current &&
+        !iconRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
+        setSearchTerm("");
+      }
+    };
 
-  const getMemberById = (id) => members.find((m) => m.user_id === id) || {};
-  const getInitials = (member) => {
-    if (member.user_email) {
-      return member.user_email.slice(0, 2).toUpperCase();
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return "";
-  };
 
-  const toggleAssigneeSelector = (issueId) => {
-    if (showAssigneeDropdownFor === issueId) {
-      setShowAssigneeDropdownFor(null);
-      setSearchTerm("");
-    } else {
-      setShowAssigneeDropdownFor(issueId);
-    }
-  };
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -52,14 +52,28 @@ const AssigneeSelector = ({ issue, showAssigneeDropdownFor, setShowAssigneeDropd
     }
   }, [searchTerm, members]);
 
-  const recentMembers = members.slice(0, 3);
+  const getInitials = (member) =>
+    member.user_email ? member.user_email.slice(0, 2).toUpperCase() : "";
+
+  const getMemberById = (id) => members.find((m) => m.user_id === id) || {};
+
+  const handleAssignMember = (issueId, memberId) => {
+    if (!issueId || !memberId) return;
+    dispatch(assignAssigneeToIssue({ issueId, memberId }));
+    setIsOpen(false);
+    setSearchTerm("");
+  };
+
+  const toggleDropdown = () => {
+    setIsOpen((prev) => !prev);
+  };
 
   useEffect(() => {
-    if (showAssigneeDropdownFor === issue.id && iconRef.current) {
+    if (isOpen && iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
       const spaceOnRight = window.innerWidth - rect.right;
       const spaceOnLeft = rect.left;
-      const preferredWidth = 80; 
+      const preferredWidth = 80;
 
       if (spaceOnRight >= preferredWidth) {
         setDropdownPosition("right");
@@ -69,20 +83,22 @@ const AssigneeSelector = ({ issue, showAssigneeDropdownFor, setShowAssigneeDropd
         setDropdownWidth("18rem");
       } else {
         const availableSpace = Math.max(spaceOnRight, spaceOnLeft) - 20;
-        setDropdownWidth(availableSpace > 200 ? `${availableSpace}px` : "200px"); 
+        setDropdownWidth(availableSpace > 200 ? `${availableSpace}px` : "200px");
         setDropdownPosition(spaceOnRight > spaceOnLeft ? "right" : "left");
       }
     }
-  }, [showAssigneeDropdownFor, issue.id]);
+  }, [isOpen]);
+
+  const recentMembers = members.slice(0, 3);
 
   return (
-    <div className="relative" ref={showAssigneeDropdownFor === issue.id ? assigneeDropdownRef : null}>
-
+    <div className="relative">
+      {/* Icon */}
       <div
         ref={iconRef}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
-        onClick={() => toggleAssigneeSelector(issue.id)}
+        onClick={toggleDropdown}
         className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-all border-2 border-blue-500 relative"
       >
         {issue.assignee ? (
@@ -101,8 +117,9 @@ const AssigneeSelector = ({ issue, showAssigneeDropdownFor, setShowAssigneeDropd
       </div>
 
       {/* Dropdown */}
-      {showAssigneeDropdownFor === issue.id && (
+      {isOpen && (
         <div
+          ref={dropdownRef}
           className={`absolute z-20 mt-3 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl ${
             dropdownPosition === "right" ? "right-0" : "left-0"
           }`}
@@ -125,7 +142,7 @@ const AssigneeSelector = ({ issue, showAssigneeDropdownFor, setShowAssigneeDropd
             )}
           </div>
 
-          {/* Search Results */}
+          {/* Filtered Results */}
           <div className="max-h-56 overflow-y-auto custom-scrollbar">
             {filteredMembers.length > 0 ? (
               filteredMembers.map((member) => (
@@ -168,7 +185,6 @@ const AssigneeSelector = ({ issue, showAssigneeDropdownFor, setShowAssigneeDropd
               </div>
             </div>
           )}
-
         </div>
       )}
     </div>

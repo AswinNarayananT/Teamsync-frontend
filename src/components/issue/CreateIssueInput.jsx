@@ -1,66 +1,78 @@
-import { useEffect, useRef, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { createIssue } from "../../redux/currentworkspace/currentWorkspaceThunk";
 
 export default function CreateIssueInput({
-  showCreateInput,
-  setShowCreateInput,
   isSprintSection = false,
   sprintId = null,
-  inputContainerRef
+  parentId = null,            // ← new prop
 }) {
   const dispatch = useDispatch();
-  const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
-  const inputRef = useRef(null);
-  
+  const projectId = useSelector(
+    (state) => state.currentWorkspace.currentProject.id
+  );
+
+  const [open, setOpen] = useState(false);
   const [issueType, setIssueType] = useState("Task");
   const [newIssueText, setNewIssueText] = useState("");
+  const containerRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // Close input and reset text on outside click
+  // Close on outside click
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (inputContainerRef.current && !inputContainerRef.current.contains(event.target)) {
-        setShowCreateInput(false);
+    function handleClickOutside(e) {
+      if (open && containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
         setNewIssueText("");
       }
-    };
-
+    }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [inputContainerRef, setShowCreateInput]);
+  }, [open]);
 
+  // Auto-focus when opened
   useEffect(() => {
-    if (showCreateInput) {
-      setTimeout(() => inputRef.current?.focus(), 0);
-    }
-  }, [showCreateInput]);
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
-  const handleSubmitIssue = () => {
-    if (!newIssueText.trim()) return;
+  const handleCreate = async () => {
+    const title = newIssueText.trim();
+    if (!title) return;
 
     const issueData = {
-      title: newIssueText,
+      title,
       type: issueType.toLowerCase(),
     };
 
     if (isSprintSection && sprintId) {
       issueData.sprint = sprintId;
-      console.log(sprintId)
     }
 
-    dispatch(createIssue({ issueData, projectId }));
+    // include parent if provided
+    if (parentId != null) {
+      issueData.parent = parentId;
+    }
+
+    await dispatch(createIssue({ issueData, projectId })).unwrap();
 
     setNewIssueText("");
-    setShowCreateInput(false);
+    setIssueType("Task");
+    setOpen(false);
   };
 
-  const handleCreateClick = () => {
-    setShowCreateInput(true);
+  const onKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleCreate();
+    } else if (e.key === "Escape") {
+      setOpen(false);
+      setNewIssueText("");
+    }
   };
 
   return (
-    <div className="px-4 py-3 bg-gray-850" ref={inputContainerRef}>
-      {showCreateInput ? (
+    <div className="px-4 py-3 bg-gray-850" ref={containerRef}>
+      {open ? (
         <div className="flex gap-2 items-center">
           <select
             value={issueType}
@@ -76,17 +88,20 @@ export default function CreateIssueInput({
             ref={inputRef}
             type="text"
             className="flex-1 px-3 py-1.5 bg-gray-800 border border-blue-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100 text-sm"
-            placeholder={isSprintSection ? "Add issue to sprint..." : "Add issue to backlog..."}
+            placeholder={
+              isSprintSection
+                ? "Add issue to sprint..."
+                : parentId != null
+                ? "Add sub-issue..."
+                : "Add issue to backlog..."
+            }
             value={newIssueText}
             onChange={(e) => setNewIssueText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSubmitIssue();
-              else if (e.key === "Escape") setShowCreateInput(false);
-            }}
+            onKeyDown={onKeyDown}
           />
 
           <button
-            onClick={handleSubmitIssue}
+            onClick={handleCreate}
             className="px-3 py-1.5 text-xs text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm disabled:opacity-50"
             disabled={!newIssueText.trim()}
           >
@@ -95,7 +110,7 @@ export default function CreateIssueInput({
         </div>
       ) : (
         <button
-          onClick={handleCreateClick}
+          onClick={() => setOpen(true)}
           className="text-sm font-medium text-blue-500 hover:text-blue-300 flex items-center transition-colors"
         >
           <span className="mr-1 text-lg">+</span> Create

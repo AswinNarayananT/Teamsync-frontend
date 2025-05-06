@@ -19,6 +19,8 @@ const DashboardTitle = ({ role }) => {
     (state) => state.currentWorkspace
   );
 
+
+
   const selectedWorkspace = useMemo(
     () =>
       workspaces.find((ws) => ws.id === currentWorkspace?.id) ||

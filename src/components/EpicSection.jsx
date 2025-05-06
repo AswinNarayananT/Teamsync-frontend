@@ -4,7 +4,7 @@ import { IoMdClose } from 'react-icons/io';
 import epicLogo from "../assets/epicLogo.svg";
 import EpicBlock from './EpicBlock';
 import { createIssue } from '../redux/currentworkspace/currentWorkspaceThunk';
-import IssueModal from './IssueModal'; // ✅ import your modal
+import IssueDetail from './issue/IssueDetail';
 
 const EpicSection = ({ showEpic, setShowEpic }) => {
   const dispatch = useDispatch();
@@ -36,7 +36,7 @@ const EpicSection = ({ showEpic, setShowEpic }) => {
   };
 
   const handleViewDetails = (epic) => {
-    setSelectedEpicId(epic.id || epic._id);
+    setSelectedEpicId(epic.id);
     setIsModalOpen(true);
   };
 
@@ -120,12 +120,10 @@ const EpicSection = ({ showEpic, setShowEpic }) => {
         )}
       </div>
 
-      <IssueModal
+      <IssueDetail
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         issueId={selectedEpicId}
-        mode={selectedEpicId ? 'edit' : 'create'} 
-        projectId={projectId}
       />
     </div>
   );

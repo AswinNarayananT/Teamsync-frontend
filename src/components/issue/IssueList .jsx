@@ -2,7 +2,6 @@ import { useSelector } from "react-redux";
 import IssueSection from "../IssueSection";
 
 const IssueList = ({ selectedParents }) => {
-  console.log(selectedParents)
   const { sprints, issues } = useSelector((state) => state.currentWorkspace);
 
   // Ensure selectedParents is always an array

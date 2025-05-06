@@ -17,7 +17,6 @@ function IssueSection({
 }) {
   const dispatch = useDispatch();
   const [expanded, setExpanded] = useState(true);
-  const [showCreateInput, setShowCreateInput] = useState(false);
   const [checked, setChecked] = useState(false);
   const [individualChecked, setIndividualChecked] = useState({});
   const [showMenu, setShowMenu] = useState(false);
@@ -204,11 +203,8 @@ function IssueSection({
 
           {/* Create Input */}
           <CreateIssueInput
-            showCreateInput={showCreateInput}
-            setShowCreateInput={setShowCreateInput}
             isSprintSection={isSprintSection}
             sprintId={sprintId}
-            inputContainerRef={inputContainerRef}
           />
         </>
       )}

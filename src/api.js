@@ -18,11 +18,12 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem("refresh_token");
 
-        if (!refreshToken) {
-          console.log("NO REFRESH")
-          store.dispatch(logoutUser())
-          return Promise.reject(new Error("No refresh token available"));
-        }
+        if (!refreshToken || isTokenExpired(refreshToken)) {
+          console.log("refresh token expired")
+          localStorage.removeItem("refresh_token");
+          store.dispatch(logoutUser());
+          return Promise.reject(new Error("Refresh token expired or missing"));
+        } 
 
         const refreshResponse = await api.post('api/v1/token/refresh/', { refresh: refreshToken });
 
@@ -42,3 +43,18 @@ api.interceptors.response.use(
 export default api;
 
 
+function isTokenExpired(token) {
+  if (!token) return true;
+
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(base64));
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (err) {
+    console.error("Failed to decode token", err);
+    return true; 
+  }
+}
