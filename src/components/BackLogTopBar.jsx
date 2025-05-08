@@ -1,26 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { FaSearch, FaUserCircle, FaUserPlus } from 'react-icons/fa';
-import { MdInsights } from 'react-icons/md';
-import { FiSettings } from 'react-icons/fi';
 import { Switch } from '@mui/material';
+import { toast } from 'react-toastify';
 
 const BackLogTopBar = ({
   showEpic,
   setShowEpic,
   selectedParents,
   setSelectedParents,
-  showSprintControls = false,
   selectedSprint,
   setSelectedSprint,
-  onCompleteSprint,
-  sprintOptions = []
+  sprintOptions = [],
+  showSprintControls = false,
 }) => {
   const epics = useSelector((state) => state.currentWorkspace.epics) || [];
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef(null);
+
+  const [showEpicDropdown, setShowEpicDropdown] = useState(false);
+  const [showSprintDropdown, setShowSprintDropdown] = useState(false);
+
+  const epicDropdownRef = useRef(null);
+  const sprintDropdownRef = useRef(null);
 
   const selectedParentsArray = Array.isArray(selectedParents) ? selectedParents : [];
+  const selectedSprintArray = Array.isArray(selectedSprint) ? selectedSprint : [];
 
   const epicOptions = epics.map((epic) => ({
     id: epic.id,
@@ -31,29 +34,56 @@ const BackLogTopBar = ({
 
   const handleNoEpicChange = () => {
     const newSelectedParents = [...selectedParentsArray];
-    const noneIndex = newSelectedParents.indexOf("none");
+    const noneIndex = newSelectedParents.indexOf('none');
 
     if (noneIndex > -1) {
       newSelectedParents.splice(noneIndex, 1);
     } else {
-      newSelectedParents.push("none");
+      newSelectedParents.push('none');
     }
 
     setSelectedParents(newSelectedParents);
   };
 
+  const toggleSprintSelection = (sprintId) => {
+    const updated = selectedSprintArray.includes(sprintId)
+      ? selectedSprintArray.filter((id) => id !== sprintId)
+      : [...selectedSprintArray, sprintId];
+    setSelectedSprint(updated);
+  };
+
+  const handleCompleteSprint = async () => {
+    if (selectedSprintArray.length === 0) return;
+    try {
+      toast.success('Sprint completed successfully');
+      // Add logic to actually complete the sprint (API call etc.)
+    } catch (error) {
+      toast.error('Failed to complete sprint');
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
+      if (
+        epicDropdownRef.current &&
+        !epicDropdownRef.current.contains(event.target)
+      ) {
+        setShowEpicDropdown(false);
+      }
+      if (
+        sprintDropdownRef.current &&
+        !sprintDropdownRef.current.contains(event.target)
+      ) {
+        setShowSprintDropdown(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   return (
-    <div className="flex flex-wrap md:flex-nowrap items-center justify-between px-4 py-2 w-full bg-[#191919] gap-4">
+    <div className="flex flex-wrap md:flex-nowrap items-start md:items-center justify-between px-4 py-2 w-full bg-[#191919] gap-4">
 
       {/* Left Section */}
       <div className="flex flex-wrap md:flex-nowrap items-center gap-3">
@@ -81,18 +111,18 @@ const BackLogTopBar = ({
         </div>
 
         {/* Epic Dropdown */}
-        <div className="relative w-25" ref={dropdownRef}>
+        <div className="relative w-28" ref={epicDropdownRef}>
           <button
-            onClick={() => setShowDropdown((prev) => !prev)}
+            onClick={() => setShowEpicDropdown((prev) => !prev)}
             className="w-full flex justify-between items-center rounded-md border border-gray-600 px-3 py-1 bg-[#1c1f24] text-sm font-medium text-white hover:bg-[#2a2a2a]"
           >
             {selectedParentsArray.length > 0
               ? `Epic(${selectedParentsArray.length})`
-              : "Epic"}
+              : 'Epic'}
             <span className="ml-2">&#9662;</span>
           </button>
 
-          {showDropdown && (
+          {showEpicDropdown && (
             <div className="absolute z-10 mt-1 rounded-md bg-[#2a2a2a] shadow-lg ring-1 ring-black ring-opacity-5">
               <div className="py-1 max-h-64 overflow-y-auto text-white text-sm">
                 {epicOptions.map((epic) => (
@@ -120,15 +150,15 @@ const BackLogTopBar = ({
                 <label className="flex items-center gap-2 px-3 py-1 hover:bg-[#3a3a3a] cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectedParentsArray.includes("none")}
+                    checked={selectedParentsArray.includes('none')}
                     onChange={handleNoEpicChange}
                     className="cursor-pointer"
                   />
                   No Epic
                 </label>
-
-                {/* Show Epic Panel */}
+                {!showSprintControls && (
                 <div className="border-t border-gray-600 mt-1 px-3 py-2 flex items-center gap-2">
+                  {/* Show Epic Panel */}
                   <Switch
                     checked={showEpic}
                     onChange={handleShowEpicChange}
@@ -145,46 +175,60 @@ const BackLogTopBar = ({
                   />
                   <span className="text-white text-sm whitespace-nowrap">Epic Panel</span>
                 </div>
+              )}
               </div>
             </div>
           )}
         </div>
-        <div>
+
+        {/* Sprint Dropdown */}
         {showSprintControls && (
-          <>
-            {/* Sprint Dropdown */}
-            <select
-              value={selectedSprint}
-              onChange={(e) => setSelectedSprint(e.target.value)}
-              className="bg-[#2a2a2a] text-white text-sm px-2 py-1 border border-gray-600 rounded"
+          <div className="relative w-32" ref={sprintDropdownRef}>
+            <button
+              onClick={() => setShowSprintDropdown((prev) => !prev)}
+              className="w-full flex justify-between items-center rounded-md border border-gray-600 px-3 py-1 bg-[#1c1f24] text-sm font-medium text-white hover:bg-[#2a2a2a]"
             >
-              <option value="" disabled>Select Sprint</option>
-              {sprintOptions.map((sprint) => (
-                <option key={sprint.id} value={sprint.id}>
-                  {sprint.name}
-                </option>
-              ))}
-            </select>
-          </>
+              {selectedSprintArray.length > 0
+                ? `Sprint(${selectedSprintArray.length})`
+                : 'Sprint'}
+              <span className="ml-2">&#9662;</span>
+            </button>
+
+            {showSprintDropdown && (
+              <div className="absolute z-10 mt-1 rounded-md bg-[#2a2a2a] shadow-lg ring-1 ring-black ring-opacity-5">
+                <div className="py-1 max-h-64 overflow-y-auto text-white text-sm">
+                  {sprintOptions.map((sprint) => (
+                    <label
+                      key={sprint.id}
+                      className="flex items-center gap-2 px-3 py-1 hover:bg-[#3a3a3a] cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSprintArray.includes(sprint.id)}
+                        onChange={() => toggleSprintSelection(sprint.id)}
+                        className="cursor-pointer"
+                      />
+                      {sprint.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
-        </div>
       </div>
 
       {/* Right Section */}
-      <div className="flex items-center gap-2 ml-auto">
-        {showSprintControls && (
-          <>
-            {/* Complete Sprint Button */}
-            <button
-              className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700"
-              onClick={onCompleteSprint}
-            >
-              Complete Sprint
-            </button>
-          </>
-        )}
-
-      </div>
+      {showSprintControls && (
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            className="bg-green-600 text-white text-sm px-3 py-1 rounded hover:bg-green-700"
+            onClick={handleCompleteSprint}
+          >
+            Complete Sprint
+          </button>
+        </div>
+      )}
     </div>
   );
 };

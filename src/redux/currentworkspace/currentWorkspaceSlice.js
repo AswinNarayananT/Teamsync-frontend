@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,createSprintInProject,deleteSprint,editSprint } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, updateProject, deleteProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,createSprintInProject,deleteSprint,editSprint } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -90,6 +90,31 @@ const currentWorkspaceSlice = createSlice({
        // 🔹 Set Current Project
        .addCase(setCurrentProject.fulfilled, (state, action) => {
         state.currentProject = action.payload;
+      })
+
+      .addCase(updateProject.fulfilled, (state, action) => {
+
+        const updatedProject = action.payload;
+        
+        state.projects = state.projects.map((project) =>
+          project.id === updatedProject.id ? updatedProject : project
+        );
+
+        if (state.currentProject?.id === updatedProject.id) {
+          state.currentProject = updatedProject;
+        }
+      })
+      
+
+      // 🔹 Delete Project
+      .addCase(deleteProject.fulfilled, (state, action) => {
+        const deletedId = action.payload;
+        state.projects = state.projects.filter(p => p.id !== deletedId);
+
+        // If currentProject is deleted, assign another one or null
+        if (state.currentProject?.id === deletedId) {
+          state.currentProject = state.projects.length > 0 ? state.projects[0] : null;
+        }
       })
 
       // 🔹 Fetch Epics for Current Project

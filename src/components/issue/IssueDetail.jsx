@@ -9,7 +9,7 @@ import IssueItem from './IssueItem';
 import CreateIssueInput from './CreateIssueInput';
 import AttachmentsSection from './AttachmentsSection';
 
-export default function IssueDetail({ isOpen, onClose, issueId, projectId }) {
+export default function IssueDetail({ isOpen, onClose, issueId }) {
   const dispatch = useDispatch();
 
   // Selector data
@@ -97,7 +97,7 @@ export default function IssueDetail({ isOpen, onClose, issueId, projectId }) {
     try {
       setIsLoading(true);
       await dispatch(
-        updateIssue({ issueId: issue.id, issueData: formData, projectId })
+        updateIssue({ issueId: issue.id, issueData: formData})
       ).unwrap();
       toast.success('Issue updated successfully');
       onClose();

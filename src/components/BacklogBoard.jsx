@@ -5,6 +5,7 @@
   import EpicSection from "./EpicSection";
   import BackLogTopBar from "./BackLogTopBar";
   import IssueList from "./issue/IssueList ";
+  import IssueCreateModal from "./issue/IssueCreateModal";
 
   const BacklogBoard = () => {
     const dispatch = useDispatch();
@@ -76,11 +77,9 @@
           </div>
         </div>
 
-        <IssueModal
+        <IssueCreateModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          mode={modalMode}
-          type={modalType}
           projectId={currentProject.id}
         />
       </div>

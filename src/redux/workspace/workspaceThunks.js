@@ -27,20 +27,6 @@ export const fetchUserWorkspaces = createAsyncThunk(
 
 
 
-
-export const fetchWorkspaceMembers = createAsyncThunk(
-  "workspace/fetchMembers",
-  async (workspaceId, { rejectWithValue }) => {
-    try {
-      const response = await api.get(`/api/v1/workspaces/${workspaceId}/members/`);
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || "Failed to fetch members");
-    }
-  }
-);
-
-
 export const createWorkspace = createAsyncThunk(
   "workspace/createWorkspace",
   async ({ workspaceData }, { dispatch, rejectWithValue }) => {

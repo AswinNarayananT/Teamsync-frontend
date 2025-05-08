@@ -6,7 +6,12 @@ import CreateIssueInput from "./issue/CreateIssueInput";
 import IssueItem from "./issue/IssueItem";
 import SprintEditModal from "./sprint/SprintEditModal";
 import { useDrop } from 'react-dnd';
-import { updateIssue, createSprintInProject, deleteSprint, editSprint } from "../redux/currentworkspace/currentWorkspaceThunk";
+import {
+  updateIssue,
+  createSprintInProject,
+  deleteSprint,
+  editSprint,
+} from "../redux/currentworkspace/currentWorkspaceThunk";
 
 function IssueSection({
   title,
@@ -21,6 +26,7 @@ function IssueSection({
   const [individualChecked, setIndividualChecked] = useState({});
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [sprintEditMode, setSprintEditMode] = useState("edit"); // "edit" | "start"
 
   const menuRef = useRef(null);
   const inputContainerRef = useRef(null);
@@ -33,7 +39,7 @@ function IssueSection({
       try {
         await dispatch(updateIssue({
           issueId: item.id,
-          projectId: projectId,
+          projectId,
           issueData: { sprint: isSprintSection ? sprintId : null },
         })).unwrap();
       } catch (error) {
@@ -51,7 +57,7 @@ function IssueSection({
         inputContainerRef.current &&
         !inputContainerRef.current.contains(event.target)
       ) {
-        setShowCreateInput(false);
+        // Close inputs if needed in future
       }
 
       if (
@@ -84,18 +90,6 @@ function IssueSection({
     });
   };
 
-  const handleActionClick = () => {
-    if (isSprintSection) {
-       if (sprint?.id) {
-        dispatch(editSprint({ sprintId: sprint.id, sprintData: { is_active: true } }));
-      }
-    } else {
-      if (projectId) {
-        dispatch(createSprintInProject({ projectId, sprintData: {} }));
-      }
-    }
-  };
-
   const handleMoreClick = () => {
     if (isSprintSection) {
       setShowMenu((prev) => !prev);
@@ -103,6 +97,7 @@ function IssueSection({
   };
 
   const handleEdit = () => {
+    setSprintEditMode("edit");
     setShowEditModal(true);
     setShowMenu(false);
   };
@@ -112,6 +107,23 @@ function IssueSection({
       dispatch(deleteSprint({ sprintId, projectId }));
     }
     setShowMenu(false);
+  };
+
+  const handleStartOrCompleteSprint = () => {
+    if (!projectId || !sprintId) return;
+
+    if (sprint.is_active) {
+      dispatch(editSprint({ sprintId: sprint.id, sprintData: { is_complete: true } }));
+    } else {
+      setSprintEditMode("start");
+      setShowEditModal(true);
+    }
+  };
+
+  const handleCreateSprint = () => {
+    if (projectId) {
+      dispatch(createSprintInProject({ projectId, sprintData: {} }));
+    }
   };
 
   const visibleItems = issues.length;
@@ -144,15 +156,27 @@ function IssueSection({
 
         <div className="flex items-center gap-3 relative">
           <button
-            onClick={handleActionClick}
-            className="text-sm px-3 py-1.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium shadow-sm"
+            onClick={isSprintSection ? handleStartOrCompleteSprint : handleCreateSprint}
+            disabled={
+              isSprintSection &&
+              !sprint?.is_active &&
+              (!issues || issues.length === 0)
+            }
+            className={`text-sm px-3 py-1.5 rounded-xl text-white font-medium shadow-sm transition-colors ${
+              isSprintSection &&
+              !sprint?.is_active &&
+              (!issues || issues.length === 0)
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-           {isSprintSection
-    ? sprint?.is_active
-      ? "Complete Sprint"
-      : "Start Sprint"
-    : "Create Sprint"}
+            {isSprintSection
+              ? sprint?.is_active
+                ? "Complete Sprint"
+                : "Start Sprint"
+              : "Create Sprint"}
           </button>
+
           <div className="relative" ref={menuRef}>
             <button
               onClick={handleMoreClick}
@@ -209,12 +233,19 @@ function IssueSection({
         </>
       )}
 
+      {/* Sprint Edit Modal */}
       {showEditModal && sprint && (
         <SprintEditModal
           sprint={sprint}
+          mode={sprintEditMode}
           onClose={() => setShowEditModal(false)}
           onSubmit={(updatedSprintData) => {
-            dispatch(editSprint({ projectId, sprintId: sprint.id, sprintData: updatedSprintData }));
+            const finalData = sprintEditMode === "start"
+              ? { ...updatedSprintData, is_active: true }
+              : updatedSprintData;
+
+            dispatch(editSprint({ projectId, sprintId: sprint.id, sprintData: finalData }));
+            setShowEditModal(false);
           }}
         />
       )}

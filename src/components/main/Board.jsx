@@ -4,10 +4,11 @@ import { useDrop } from "react-dnd";
 import {
   updateIssueStatus,
   fetchActiveSprintIssues,
+  fetchEpics,
+  fetchProjectIssues
 } from "../../redux/currentworkspace/currentWorkspaceThunk";
 import SprintItem from "../issue/SprintItem";
 import BackLogTopBar from "../BackLogTopBar";
-import { toast } from "react-toastify";
 
 const columns = [
   { title: "To Do", status: "todo" },
@@ -18,7 +19,9 @@ const columns = [
 
 const Board = () => {
   const dispatch = useDispatch();
-  const projectId = useSelector((state) => state.currentWorkspace.currentProject?.id);
+  const projectId = useSelector(
+    (state) => state.currentWorkspace.currentProject?.id
+  );
 
   const [issuesByStatus, setIssuesByStatus] = useState({
     todo: [],
@@ -29,13 +32,15 @@ const Board = () => {
 
   const [showEpic, setShowEpic] = useState(true);
   const [selectedParents, setSelectedParents] = useState([]);
-  const [selectedSprint, setSelectedSprint] = useState(null);
+  const [selectedSprint, setSelectedSprint] = useState([]);
   const [sprintList, setSprintList] = useState([]);
 
   const fetchIssues = async () => {
     try {
+      dispatch(fetchEpics({ projectId }));
+      dispatch(fetchProjectIssues(projectId));
       const data = await dispatch(fetchActiveSprintIssues(projectId)).unwrap();
-      const sprint = data?.sprint || null;
+      const sprints = Array.isArray(data?.sprints) ? data.sprints : [];
       const issues = Array.isArray(data?.issues) ? data.issues : [];
 
       const grouped = {
@@ -52,8 +57,7 @@ const Board = () => {
       });
 
       setIssuesByStatus(grouped);
-      setSelectedSprint(sprint);
-      setSprintList(sprint ? [sprint] : []);
+      setSprintList(sprints);
     } catch (err) {
       console.error("Error fetching active sprint issues:", err);
     }
@@ -75,18 +79,6 @@ const Board = () => {
     });
   };
 
-  const handleCompleteSprint = async () => {
-    if (!selectedSprint) return;
-
-    try {
-      toast.success("Sprint completed successfully");
-      fetchIssues(); // Refetch after completing sprint
-    } catch (error) {
-      toast.error("Failed to complete sprint");
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
     if (projectId) {
       fetchIssues();
@@ -99,7 +91,7 @@ const Board = () => {
         {/* Page Header */}
         <h1 className="text-2xl font-semibold mb-4">Board</h1>
 
-        {/* Top Bar (shared with Backlog style) */}
+        {/* Top Bar */}
         <BackLogTopBar
           showEpic={showEpic}
           setShowEpic={setShowEpic}
@@ -108,18 +100,19 @@ const Board = () => {
           showSprintControls={true}
           selectedSprint={selectedSprint}
           setSelectedSprint={setSelectedSprint}
-          onCompleteSprint={handleCompleteSprint}
           sprintOptions={sprintList}
         />
 
-        {/* Columns */}
+        {/* Sprint Columns */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           {columns.map((col) => {
             const [, drop] = useDrop({
               accept: "issue",
               drop: (item) => {
                 if (item && item.id) {
-                  dispatch(updateIssueStatus({ issueId: item.id, status: col.status }));
+                  dispatch(
+                    updateIssueStatus({ issueId: item.id, status: col.status })
+                  );
                   handleStatusChange(item.id, col.status);
                 }
               },

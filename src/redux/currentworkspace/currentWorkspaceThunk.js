@@ -86,8 +86,33 @@ export const fetchWorkspaceMembers = createAsyncThunk(
     }
   );
 
+  export const updateProject = createAsyncThunk(
+    "project/updateProject",
+    async ({ projectId, updatedData }, { rejectWithValue }) => {
+      try {
+        const response = await api.put(`/api/v1/project/${projectId}/update/`, updatedData);
+        return response.data;
+      } catch (error) {
+        return rejectWithValue(error.response?.data || "Failed to update project");
+      }
+    }
+  );
+  
 
-// 🔹 Fetch Workspace Projects
+  export const deleteProject = createAsyncThunk(
+    "project/deleteProject",
+    async (projectId, { rejectWithValue }) => {
+      try {
+        await api.delete(`/api/v1/project/${projectId}/delete/`);
+        return projectId; 
+      } catch (error) {
+        return rejectWithValue(error.response?.data || "Failed to delete project");
+      }
+    }
+  );
+  
+
+
 export const fetchWorkspaceProjects = createAsyncThunk(
     "currentWorkspace/fetchWorkspaceProjects",
     async (workspaceId, { rejectWithValue }) => {
@@ -306,8 +331,6 @@ export const createAttachment = createAsyncThunk(
   'attachments/create',
   async ({ issueId, formData }, { rejectWithValue }) => {
     try {
-      // Log the formData to verify
-      formData.forEach((v, k) => console.log(k, v));
 
       const response = await api.post(
         `/api/v1/project/issues/${issueId}/attachments/`,
@@ -317,6 +340,18 @@ export const createAttachment = createAsyncThunk(
         }
       );
       return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const deleteAttachment = createAsyncThunk(
+  'attachments/delete',
+  async (attachmentId, { rejectWithValue }) => {
+    try {
+      await api.delete(`/api/v1/project/attachments/${attachmentId}/`);
+      return attachmentId;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }

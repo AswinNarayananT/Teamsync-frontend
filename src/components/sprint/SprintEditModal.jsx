@@ -1,58 +1,85 @@
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { editSprint } from '../../redux/currentworkspace/currentWorkspaceThunk';
+import { useDispatch } from 'react-redux';
 
-// Helper function to get formatted future date
-const getFutureDate = (days) => {
-  const date = new Date();
+const getFutureDate = (days, fromDate = new Date()) => {
+  const date = new Date(fromDate);
   date.setDate(date.getDate() + days);
   return date.toISOString().split('T')[0];
 };
 
 const formatDate = (date) => new Date(date).toISOString().split('T')[0];
 
-const SprintEditModal = ({ sprint, onClose, onSubmit }) => {
+const SprintEditModal = ({ sprint, mode = 'edit', onClose }) => {
+  const dispatch =useDispatch()
+  const navigate = useNavigate();
+  const isStartMode = mode === 'start';
   const [dateRangeType, setDateRangeType] = useState('1_week');
 
   const today = formatDate(new Date());
-  const nextWeek = getFutureDate(7);
+  const defaultStartDate = isStartMode ? today : formatDate(sprint?.start_date || new Date());
+  const defaultEndDate = getFutureDate(7, new Date(defaultStartDate));
 
   const formik = useFormik({
     initialValues: {
       name: sprint?.name || '',
-      start_date: sprint?.start_date || today,
-      end_date: sprint?.end_date || nextWeek,
+      start_date: sprint?.start_date || defaultStartDate,
+      end_date: sprint?.end_date || defaultEndDate,
       goal: sprint?.goal || '',
     },
     validationSchema: Yup.object({
       name: Yup.string().required('Sprint name is required'),
-      start_date: Yup.date().required('Start date is required'),
+      start_date: isStartMode
+        ? Yup.date()
+            .min(today, 'Start date cannot be in the past')
+            .required('Start date is required')
+        : Yup.date().required('Start date is required'),
       end_date: Yup.date()
         .min(Yup.ref('start_date'), "End date can't be before start date")
         .required('End date is required'),
       goal: Yup.string(),
     }),
-    onSubmit: (values) => {
-      onSubmit(values);
-      onClose();
+    onSubmit: async (values) => {
+      const sprintData = {
+        ...values,
+        ...(mode === 'start' && { is_active: true }),
+      };
+    
+      try {
+        console.log('Submitting sprint:', sprintData);
+    
+        if (mode === 'start') {
+          dispatch(editSprint({ sprintId: sprint.id, sprintData }));
+          navigate('/dashboard/board');
+        } else if (mode === 'edit') {
+          dispatch(editSprint({ sprintId: sprint.id, sprintData }));
+        }
+    
+        onClose();
+      } catch (error) {
+        console.error('Failed to submit sprint:', error);
+      }
     },
     enableReinitialize: true,
   });
 
   useEffect(() => {
     if (dateRangeType === '1_week') {
-      const newEnd = getFutureDate(7);
-      formik.setFieldValue('end_date', newEnd);
+      formik.setFieldValue('end_date', getFutureDate(7, new Date(formik.values.start_date)));
     } else if (dateRangeType === '2_weeks') {
-      const newEnd = getFutureDate(14);
-      formik.setFieldValue('end_date', newEnd);
+      formik.setFieldValue('end_date', getFutureDate(14, new Date(formik.values.start_date)));
     }
   }, [dateRangeType, formik.values.start_date]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center">
       <div className="bg-gray-900 rounded-xl p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-lg font-semibold text-white mb-4">Edit Sprint</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">
+          {isStartMode ? 'Start Sprint' : 'Edit Sprint'}
+        </h2>
 
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           {/* Name */}
@@ -87,7 +114,7 @@ const SprintEditModal = ({ sprint, onClose, onSubmit }) => {
             )}
           </div>
 
-          {/* Sprint Duration Dropdown */}
+          {/* Sprint Duration */}
           <div>
             <label className="block text-sm mb-1 text-gray-300">Sprint Duration</label>
             <select
@@ -143,7 +170,7 @@ const SprintEditModal = ({ sprint, onClose, onSubmit }) => {
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-500"
             >
-              Save
+              {isStartMode ? 'Start' : 'Save'}
             </button>
           </div>
         </form>
