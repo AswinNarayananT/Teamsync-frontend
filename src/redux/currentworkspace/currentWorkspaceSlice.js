@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, fetchIssuesByEpic, createProject, updateProject, deleteProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,createSprintInProject,deleteSprint,editSprint } from "./currentWorkspaceThunk";
+import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, createProject, updateProject, deleteProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,fetchActiveSprintIssues,createSprintInProject,deleteSprint,editSprint,completeSprint } from "./currentWorkspaceThunk";
 
 const initialState = {
   currentWorkspace: null,
@@ -198,6 +198,38 @@ const currentWorkspaceSlice = createSlice({
         state.sprintsError = action.payload;
       })
 
+      // complete sprint
+      .addCase(completeSprint.pending, (state) => {
+        state.sprintCompleting = true;
+        state.sprintCompleteError = null;
+      })
+      .addCase(completeSprint.fulfilled, (state, action) => {
+      state.sprintCompleting = false;
+      const { sprint_id, new_sprint } = action.payload;
+      state.sprints = state.sprints.filter(sprint => sprint.id !== sprint_id);
+      if (new_sprint) {
+        state.sprints.push(new_sprint);
+      }
+    })
+      .addCase(completeSprint.rejected, (state, action) => {
+        state.sprintCompleting = false;
+        state.sprintCompleteError = action.payload;
+      })
+
+      .addCase(fetchActiveSprintIssues.pending, (state) => {
+        state.issuesLoading = true;
+        state.issuesError = null;
+      })
+      .addCase(fetchActiveSprintIssues.fulfilled, (state, action) => {
+        state.issuesLoading = false;
+        state.issues = Array.isArray(action.payload.issues) ? action.payload.issues : [];
+      
+      })
+      .addCase(fetchActiveSprintIssues.rejected, (state, action) => {
+        state.issuesLoading = false;
+        state.issuesError = action.payload || "Failed to load issues";
+      })
+
       .addCase(assignParentEpic.fulfilled, (state, action) => {
         const { issue_id, epic_id } = action.payload;
         const index = state.issues.findIndex(issue => issue.id === issue_id);
@@ -236,21 +268,6 @@ const currentWorkspaceSlice = createSlice({
       })
       .addCase(updateIssueStatus.rejected, (state, action) => {
         state.error = action.payload;
-      })
-
-      // 🔹 Fetch Issues for Epic
-      .addCase(fetchIssuesByEpic.pending, (state) => {
-        state.issuesLoading = true;
-        state.issuesError = null;
-      })
-      .addCase(fetchIssuesByEpic.fulfilled, (state, action) => {
-        const { epicId, issues } = action.payload;
-        state.issuesLoading = false;
-        state.issues[epicId] = issues;
-      })
-      .addCase(fetchIssuesByEpic.rejected, (state, action) => {
-        state.issuesLoading = false;
-        state.issuesError = action.payload;
       })
 
       .addCase(createIssue.fulfilled, (state, action) => {

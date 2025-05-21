@@ -8,13 +8,14 @@ import { Link } from 'react-router-dom';
 import NotificationBell from "./realtime/NotificationBell";
 
 
+
 const TopNavigation = ({ role }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
-
+ 
   const handleLogout = () => {
     dispatch(logoutUser());
     navigate("/login");
@@ -89,10 +90,6 @@ const TopNavigation = ({ role }) => {
             {/* User dropdown */}
             {showUserMenu && (
               <div className="absolute right-0 mt-2 w-48 bg-[#1d1d20] border border-[#2a2a2d] rounded-md shadow-lg z-10">
-                <div className="py-2 px-4 border-b border-[#2a2a2d]">
-                  <p className="text-white text-sm font-medium">{user.first_name} {user.last_name}</p>
-                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
-                </div>
                 <div className="py-1">
                 <Link
                   to="/dashboard/settings"

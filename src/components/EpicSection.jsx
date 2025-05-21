@@ -6,7 +6,7 @@ import EpicBlock from './EpicBlock';
 import { createIssue } from '../redux/currentworkspace/currentWorkspaceThunk';
 import IssueDetail from './issue/IssueDetail';
 
-const EpicSection = ({ showEpic, setShowEpic }) => {
+const   EpicSection = ({ showEpic, setShowEpic }) => {
   const dispatch = useDispatch();
   const [isCreating, setIsCreating] = useState(false);
   const [epicTitle, setEpicTitle] = useState('');

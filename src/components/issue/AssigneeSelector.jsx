@@ -101,9 +101,21 @@ const AssigneeSelector = ({ issue }) => {
         onClick={toggleDropdown}
         className="w-8 h-8 rounded-full bg-blue-700 text-white flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-all border-2 border-blue-500 relative"
       >
-        {issue.assignee ? (
-          <span className="text-sm font-bold">{getInitials(getMemberById(issue.assignee))}</span>
-        ) : (
+        {issue.assignee ? (() => {
+          const member = getMemberById(issue.assignee);
+
+          return member?.user_profile_picture ? (
+            <img
+              src={member.user_profile_picture}
+              alt="Profile"
+              className="w-6 h-6 rounded-full object-cover"
+            />
+          ) : (
+            <span className="text-sm font-bold">
+              {getInitials(member)}
+            </span>
+          );
+        })() : (
           <CheckCircleIcon className="w-5 h-5" />
         )}
 
@@ -120,9 +132,8 @@ const AssigneeSelector = ({ issue }) => {
       {isOpen && (
         <div
           ref={dropdownRef}
-          className={`absolute z-20 mt-3 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl ${
-            dropdownPosition === "right" ? "right-0" : "left-0"
-          }`}
+          className={`absolute z-50 mt-3 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl ${dropdownPosition === "right" ? "right-0" : "left-0"
+            }`}
           style={{ width: dropdownWidth }}
         >
           {/* Search Bar */}
@@ -151,9 +162,17 @@ const AssigneeSelector = ({ issue }) => {
                   onClick={() => handleAssignMember(issue.id, member.id)}
                   className="flex items-center gap-3 px-3 py-2 hover:bg-gray-600 cursor-pointer border-b border-gray-700 last:border-0 transition-all"
                 >
-                  <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-xs">
-                    {getInitials(member)}
-                  </div>
+                  {member.user_profile_picture ? (
+                    <img
+                      src={member.user_profile_picture}
+                      alt="Profile"
+                      className="w-7 h-7 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-xs">
+                      {getInitials(member)}
+                    </div>
+                  )}
                   <div className="flex flex-col overflow-hidden">
                     <span className="text-white text-sm truncate">{member.user_email || "Unnamed"}</span>
                     <span className="text-gray-400 text-xs truncate">{member.user_name}</span>
@@ -164,6 +183,7 @@ const AssigneeSelector = ({ issue }) => {
               <div className="p-3 text-gray-400 text-center text-sm">No matching members</div>
             )}
           </div>
+
 
           {/* Quick Recent Members */}
           {recentMembers.length > 0 && (
@@ -176,15 +196,24 @@ const AssigneeSelector = ({ issue }) => {
                     onClick={() => handleAssignMember(issue.id, member.id)}
                     className="flex items-center gap-2 bg-gray-600 hover:bg-gray-500 text-white text-xs rounded-full px-2 py-1 cursor-pointer transition-all"
                   >
-                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px]">
-                      {getInitials(member)}
-                    </div>
+                    {member.user_profile_picture ? (
+                      <img
+                        src={member.user_profile_picture}
+                        alt="Profile"
+                        className="w-5 h-5 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-[10px]">
+                        {getInitials(member)}
+                      </div>
+                    )}
                     <span className="truncate">{member.user_name?.split(" ")[0] || "User"}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
         </div>
       )}
     </div>

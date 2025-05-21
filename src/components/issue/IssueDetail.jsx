@@ -278,18 +278,6 @@ export default function IssueDetail({ isOpen, onClose, issueId }) {
           <div className="mb-5">
             <h4 className="text-sm text-gray-400 mb-2">Assignee</h4>
             <AssigneeSelector issue={issue} />
-            <button 
-              className="text-purple-400 text-sm mt-2 hover:text-purple-300 transition-colors"
-              onClick={() => {
-                // Find the first member (assuming it's the current user)
-                const firstMember = members[0];
-                if (firstMember) {
-                  setAssignee(firstMember.user_id);
-                }
-              }}
-            >
-              Assign to me
-            </button>
           </div>
           
           {/* Parent Epic */}

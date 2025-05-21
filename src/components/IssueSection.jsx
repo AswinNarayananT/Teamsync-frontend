@@ -5,6 +5,7 @@ import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import CreateIssueInput from "./issue/CreateIssueInput";
 import IssueItem from "./issue/IssueItem";
 import SprintEditModal from "./sprint/SprintEditModal";
+import CompleteSprintButton from "./sprint/CompleteSprintButton";
 import { useDrop } from 'react-dnd';
 import {
   updateIssue,
@@ -26,7 +27,7 @@ function IssueSection({
   const [individualChecked, setIndividualChecked] = useState({});
   const [showMenu, setShowMenu] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [sprintEditMode, setSprintEditMode] = useState("edit"); // "edit" | "start"
+  const [sprintEditMode, setSprintEditMode] = useState("edit"); 
 
   const menuRef = useRef(null);
   const inputContainerRef = useRef(null);
@@ -155,27 +156,34 @@ function IssueSection({
         </div>
 
         <div className="flex items-center gap-3 relative">
+         {isSprintSection ? (
+          sprint?.is_active ? (
+            // Use your reusable component here
+            <CompleteSprintButton sprintId={sprint.id} disabled={false} />
+          ) : (
+            // Keep the original button for "Start Sprint"
+            <button
+              onClick={handleStartOrCompleteSprint}
+              disabled={!issues || issues.length === 0}
+              className={`text-sm px-3 py-1.5 rounded-xl text-white font-medium shadow-sm transition-colors ${
+                !issues || issues.length === 0
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              Start Sprint
+            </button>
+          )
+        ) : (
+          // For "Create Sprint"
           <button
-            onClick={isSprintSection ? handleStartOrCompleteSprint : handleCreateSprint}
-            disabled={
-              isSprintSection &&
-              !sprint?.is_active &&
-              (!issues || issues.length === 0)
-            }
-            className={`text-sm px-3 py-1.5 rounded-xl text-white font-medium shadow-sm transition-colors ${
-              isSprintSection &&
-              !sprint?.is_active &&
-              (!issues || issues.length === 0)
-                ? "bg-gray-500 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            onClick={handleCreateSprint}
+            className="text-sm px-3 py-1.5 rounded-xl text-white font-medium shadow-sm bg-blue-600 hover:bg-blue-700"
           >
-            {isSprintSection
-              ? sprint?.is_active
-                ? "Complete Sprint"
-                : "Start Sprint"
-              : "Create Sprint"}
+            Create Sprint
           </button>
+        )}
+
 
           <div className="relative" ref={menuRef}>
             <button

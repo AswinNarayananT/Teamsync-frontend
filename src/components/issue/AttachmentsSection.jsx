@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState,useRef } from 'react';
 import { useDispatch } from 'react-redux';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import { fetchAttachments, createAttachment, deleteAttachment } from '../../redux/currentworkspace/currentWorkspaceThunk';
 import PdfViewer from './PdfViewer';
-
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from '@mui/material';
 
 export default function AttachmentsSection({ issueId }) {
   const dispatch = useDispatch();
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [type, setType] = useState('file');
-  const [file, setFile] = useState(null);
-  const [url, setUrl] = useState('');
-  const [error, setError] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState(null);
+
+  const MAX_FILE_SIZE_MB = 5;
+  const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 
   useEffect(() => {
     const loadAttachments = async () => {
@@ -28,50 +30,78 @@ export default function AttachmentsSection({ issueId }) {
     if (issueId) loadAttachments();
   }, [dispatch, issueId]);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if ((type === 'file' || type === 'image') && !file)
-      return setError('Please select a file.');
-    if (type === 'link' && !url.trim())
-      return setError('Please provide a valid link.');
-  
-    setError('');
-    setUploading(true);
-  
-    const payload = new FormData();
-    payload.append('type', type);
-    if (type === 'link') payload.append('url', url);
-    else payload.append('file', file);
-  
-    try {
-      const result = await dispatch(
-        createAttachment({ issueId, formData: payload })
-      );
+ const handleCreate = async (values, { setSubmitting, setFieldError, resetForm }) => {
+  setSubmitting(true);
+
+  const uploadQueue = [];
+
+  try {
+    if (values.type === 'link') {
+      for (const link of values.urls) {
+        const formData = new FormData();
+        formData.append('type', 'link');
+        formData.append('url', link);
+        uploadQueue.push(formData);
+      }
+    } else {
+      const selectedFiles = values.type === 'image' ? values.images : values.files;
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append('type', values.type);
+        formData.append('file', file);
+        uploadQueue.push(formData);
+      }
+    }
+
+    const uploadedAttachments = [];
+
+    for (const payload of uploadQueue) {
+      const result = await dispatch(createAttachment({ issueId, formData: payload }));
       if (createAttachment.fulfilled.match(result)) {
-        setAttachments(prev => [result.payload, ...prev]);
-        setFile(null);
-        setUrl('');
+        uploadedAttachments.push(result.payload);
       } else {
         const err = result.payload;
-        setError(typeof err === 'string' ? err : JSON.stringify(err));
+        throw new Error(typeof err === 'string' ? err : JSON.stringify(err));
       }
-    } catch (err) {
-      setError('Upload failed. Please try again.');
-    } finally {
-      setUploading(false);
     }
-  };
 
-  const handleDeleteAttachment = async (id) => {
-    try {
-      const result = await dispatch(deleteAttachment(id));
-      if (deleteAttachment.fulfilled.match(result)) {
-        setAttachments(prev => prev.filter(att => att.id !== id));
-      }
-    } catch (error) {
-      console.error('Failed to delete attachment:', error);
+    setAttachments(prev => [...uploadedAttachments, ...prev]);
+    resetForm();
+  } catch (err) {
+    setFieldError('general', err.message || 'Upload failed. Please try again.');
+  } finally {
+    setSubmitting(false);
+  }
+};
+
+
+const handleDeleteClick = (id) => {
+  setSelectedAttachmentId(id);
+  setDeleteConfirmOpen(true);
+};
+
+const confirmDelete = async () => {
+  if (!selectedAttachmentId) return;
+
+  try {
+    const result = await dispatch(deleteAttachment(selectedAttachmentId));
+    if (deleteAttachment.fulfilled.match(result)) {
+      setAttachments(prev => prev.filter(att => att.id !== selectedAttachmentId));
     }
-  };
+  } catch (error) {
+    console.error('Failed to delete attachment:', error);
+  } finally {
+    setDeleteConfirmOpen(false);
+    setSelectedAttachmentId(null);
+  }
+};
+
+const cancelDelete = () => {
+  setDeleteConfirmOpen(false);
+  setSelectedAttachmentId(null);
+};
+
+
 
   const openPreview = (att) => {
     setPreviewData(att);
@@ -318,8 +348,8 @@ export default function AttachmentsSection({ issueId }) {
                         </svg>
                       </button>
                     )}
-                     <button
-                      onClick={() => handleDeleteAttachment(att.id)}
+                   <button
+                      onClick={() => handleDeleteClick(att.id)}
                       className="p-2 rounded hover:bg-gray-700 text-red-500 hover:text-red-400 transition-colors"
                       title="Delete"
                     >
@@ -347,148 +377,197 @@ export default function AttachmentsSection({ issueId }) {
         </div>
       )}
 
-      <form onSubmit={handleCreate} className="bg-gray-800 p-5 rounded-lg border border-gray-700">
-        <h4 className="text-gray-300 font-medium mb-3">Add New Attachment</h4>
-        
-        <div className="flex gap-3 mb-4">
-          {['file', 'image', 'link'].map(opt => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => {
-                setType(opt);
-                setError('');
-                setFile(null);
-                setUrl('');
-              }}
-              className={`px-4 py-2 rounded-md transition-colors ${
-                type === opt 
-                  ? 'bg-purple-700 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              {opt === 'file' && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline-block mr-1">
-                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                  <polyline points="13 2 13 9 20 9"></polyline>
-                </svg>
-              )}
-              {opt === 'image' && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline-block mr-1">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-              )}
-              {opt === 'link' && (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="inline-block mr-1">
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                </svg>
-              )}
-              {opt.charAt(0).toUpperCase() + opt.slice(1)}
-            </button>
-          ))}
-        </div>
+<Formik
+  initialValues={{ type: 'file', url: '', urls: [], files: [], images: [] }}
+  validationSchema={Yup.lazy(values => {
+    switch (values.type) {
+      case 'link':
+        return Yup.object({
+          type: Yup.string().required(),
+          urls: Yup.array().min(1, 'Please add at least one link.')
+        });
+      case 'image':
+        return Yup.object({
+          type: Yup.string().required(),
+          images: Yup.array()
+            .min(1, 'Please select at least one image.')
+            .test('fileSize', 'One or more images exceed 5MB', files =>
+              files.every(file => file.size <= MAX_FILE_SIZE)
+            )
+        });
+      case 'file':
+      default:
+        return Yup.object({
+          type: Yup.string().required(),
+          files: Yup.array()
+            .min(1, 'Please select at least one file.')
+            .test('fileSize', 'One or more files exceed 5MB', files =>
+              files.every(file => file.size <= MAX_FILE_SIZE)
+            )
+        });
+    }
+  })}
+  onSubmit={handleCreate}
+>
+  {({ values, setFieldValue, isSubmitting }) => (
+    <Form className="bg-gray-800 p-5 rounded-lg border border-gray-700">
+      <h4 className="text-gray-300 font-medium mb-3">Add New Attachments</h4>
 
-        {type === 'link' ? (
-          <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-1">URL</label>
+      <div className="flex gap-3 mb-4">
+        {['file', 'image', 'link'].map(opt => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => setFieldValue('type', opt)}
+            className={`px-4 py-2 rounded-md transition-colors ${
+              values.type === opt
+                ? 'bg-purple-700 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            {opt.charAt(0).toUpperCase() + opt.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {values.type === 'link' ? (
+        <div className="mb-4">
+          <label className="block text-gray-400 text-sm mb-1">Add URL</label>
+          <div className="flex gap-2">
             <input
               type="url"
+              value={values.url}
+              onChange={e => setFieldValue('url', e.target.value)}
               placeholder="https://..."
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="flex-grow p-3 bg-gray-700 border border-gray-600 rounded-md text-white"
             />
+            <button
+              type="button"
+              onClick={() => {
+                if (values.url) {
+                  setFieldValue('urls', [...values.urls, values.url]);
+                  setFieldValue('url', '');
+                }
+              }}
+              className="bg-purple-600 hover:bg-purple-500 px-3 py-2 rounded text-white"
+            >
+              Add
+            </button>
           </div>
-        ) : (
-          <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-1">
-              {type === 'image' ? 'Image File' : 'File'}
-            </label>
-            <div className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white flex items-center">
-              {file ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-300 truncate">{file.name}</span>
-                  <button 
-                    type="button" 
-                    onClick={() => setFile(null)}
-                    className="text-gray-400 hover:text-gray-200"
+          <ErrorMessage name="urls" component="div" className="text-red-400 text-sm mt-1" />
+          {values.urls.length > 0 && (
+            <ul className="mt-2 space-y-1 text-sm text-gray-300">
+              {values.urls.map((u, idx) => (
+                <li key={idx} className="flex justify-between items-center">
+                  <a href={u} target="_blank" rel="noopener noreferrer" className="truncate">{u}</a>
+                  <button
+                    type="button"
+                    onClick={() => setFieldValue('urls', values.urls.filter((_, i) => i !== idx))}
+                    className="text-red-400 hover:text-red-200 ml-2"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <line x1="18" y1="6" x2="6" y2="18"></line>
-                      <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
+                    &times;
                   </button>
-                </div>
-              ) : (
-                <label className="flex items-center gap-2 cursor-pointer w-full">
-                  <span className="bg-gray-600 px-3 py-1 rounded text-sm">Browse</span>
-                  <span className="text-gray-400 text-sm">
-                    {type === 'image' ? 'Select an image' : 'Select a file'}
-                  </span>
-                  <input
-                    type="file"
-                    accept={type === 'image' ? 'image/*' : '*'}
-                    onChange={e => {
-                      if (e.target.files && e.target.files[0]) {
-                        setFile(e.target.files[0]);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-900 bg-opacity-30 border border-red-800 rounded-md text-red-300">
-            <div className="flex items-start">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-1 mr-2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <span>{error}</span>
-            </div>
-          </div>
-        )}
-
-        <button 
-          type="submit" 
-          className={`w-full px-4 py-3 rounded-md text-white flex items-center justify-center ${
-            uploading
-              ? 'bg-gray-600 cursor-not-allowed'
-              : 'bg-purple-600 hover:bg-purple-500 transition-colors'
-          }`}
-          disabled={uploading}
-        >
-          {uploading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Uploading...
-            </>
-          ) : (
-            <>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-              Add Attachment
-            </>
+                </li>
+              ))}
+            </ul>
           )}
-        </button>
-      </form>
+        </div>
+      ) : (
+        <div className="mb-4">
+          <label className="block text-gray-400 text-sm mb-1">
+            {values.type === 'image' ? 'Upload Images' : 'Upload Files'}
+          </label>
+          <input
+            type="file"
+            accept={values.type === 'image' ? 'image/*' : '*'}
+            multiple
+            onChange={e => {
+              const files = Array.from(e.target.files || []);
+              if (values.type === 'image') {
+                setFieldValue('images', [...values.images, ...files]);
+              } else {
+                setFieldValue('files', [...values.files, ...files]);
+              }
+            }}
+            className="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white"
+          />
+          <ErrorMessage name={values.type === 'image' ? 'images' : 'files'} component="div" className="text-red-400 text-sm mt-1" />
+          {(values.type === 'image' ? values.images : values.files).length > 0 && (
+            <ul className="mt-2 space-y-1 text-sm text-gray-300">
+              {(values.type === 'image' ? values.images : values.files).map((file, idx) => (
+                <li key={idx} className="flex justify-between items-center">
+                  <span className="truncate">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newFiles = (values.type === 'image' ? values.images : values.files).filter((_, i) => i !== idx);
+                      values.type === 'image'
+                        ? setFieldValue('images', newFiles)
+                        : setFieldValue('files', newFiles);
+                    }}
+                    className="text-red-400 hover:text-red-200 ml-2"
+                  >
+                    &times;
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className={`w-full px-4 py-3 rounded-md text-white flex items-center justify-center ${
+          isSubmitting
+            ? 'bg-gray-600 cursor-not-allowed'
+            : 'bg-purple-600 hover:bg-purple-500'
+        }`}
+      >
+        {isSubmitting ? (
+          <>
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Uploading...
+          </>
+        ) : (
+          <>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Add Attachments
+          </>
+        )}
+      </button>
+    </Form>
+  )}
+</Formik>
+
+
       
       {/* Preview Modal */}
       <PreviewModal />
+
+      <Dialog open={deleteConfirmOpen} onClose={cancelDelete}>
+      <DialogTitle>Confirm Deletion</DialogTitle>
+      <DialogContent>
+        Are you sure you want to delete this attachment? This action cannot be undone.
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={cancelDelete} color="primary">
+          Cancel
+        </Button>
+        <Button onClick={confirmDelete} color="error">
+          Delete
+        </Button>
+      </DialogActions>
+    </Dialog>
+
     </div>
   );
 }

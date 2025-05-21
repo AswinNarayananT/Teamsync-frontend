@@ -188,9 +188,26 @@ export const fetchEpics = createAsyncThunk(
 
 export const fetchProjectIssues = createAsyncThunk(
   "currentWorkspace/fetchProjectIssues",
-  async (projectId, { rejectWithValue }) => {
+  async ({ projectId, filters = {} }, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/api/v1/project/${projectId}/issues/list/`);
+      const params = new URLSearchParams();
+
+      if (filters.epics?.length) {
+        filters.epics.forEach((epicId) => params.append("epics", epicId));
+      }
+
+      if (filters.assignees?.length) {
+        filters.assignees.forEach((userId) => params.append("assignees", userId));
+      }
+
+      if (filters.unassigned) {
+        params.append("unassigned", "true");
+      }
+
+      const response = await api.get(
+        `/api/v1/project/${projectId}/issues/list/?${params.toString()}`
+      );
+
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || "Failed to fetch issues");
@@ -228,9 +245,22 @@ export const fetchSprintsInProject = createAsyncThunk(
 
 export const fetchActiveSprintIssues = createAsyncThunk(
   "issues/fetchActiveSprintIssues",
-  async (projectId, { rejectWithValue }) => {
+  /**
+   * @param {{ projectId: number, parentIds?: number[], sprintIds?: number[], assigneeIds?: number[] }}
+   */
+  async ({ projectId, parentIds = [], sprintIds = [], assigneeIds = [] }, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/api/v1/project/${projectId}/active-sprint-issues/`);
+      const params = new URLSearchParams();
+
+      if (parentIds.length)   params.append("parents", parentIds.join(","));
+      if (sprintIds.length)   params.append("sprints", sprintIds.join(","));
+      if (assigneeIds.length) params.append("assignee", assigneeIds.join(",")); 
+
+      const url =
+        `/api/v1/project/${projectId}/active-sprint-issues/` +
+        (params.toString() ? `?${params.toString()}` : "");
+
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       return rejectWithValue(
@@ -239,6 +269,7 @@ export const fetchActiveSprintIssues = createAsyncThunk(
     }
   }
 );
+
 
 
 export const editSprint = createAsyncThunk(
@@ -358,14 +389,31 @@ export const deleteAttachment = createAsyncThunk(
   }
 );
 
-export const fetchIssuesByEpic = createAsyncThunk(
-  'issues/fetchIssuesByEpic',
-  async (epicId, thunkAPI) => {
+
+export const checkIssueStatus = createAsyncThunk(
+  "sprint/checkIssueStatus",
+  async (sprintId, { rejectWithValue }) => {
     try {
-      const response = await axios.get(`/api/epics/${epicId}/issues/`);
-      return { epicId, issues: response.data };
+      const response = await api.get(`/api/v1/project/sprints/${sprintId}/issues/`);
+      console.log("data of issue",response.data)
+      return response.data; 
     } catch (error) {
-      return thunkAPI.rejectWithValue(error.response?.data || "Failed to fetch issues");
+      return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
+export const completeSprint = createAsyncThunk(
+  "sprint/completeSprint",
+  async ({ sprintId, action }, { rejectWithValue }) => {
+    try {
+      const response = await api.post(`/api/v1/project/sprints/${sprintId}/complete/`, {
+        action,
+      });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+

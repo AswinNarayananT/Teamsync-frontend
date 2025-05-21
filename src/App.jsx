@@ -23,7 +23,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Board from "./components/main/Board";
 import ProjectList from "./components/project/ProjectList";
-
+import Chat from "./components/realtime/Chat";
+import MeetingPage from "./components/realtime/Meeting";
 
 
 
@@ -48,6 +49,8 @@ function App() {
           <Route path="team" element={<Team />} />
           <Route path="settings" element={<UserSettings />} />
           <Route path="projects" element={<ProjectList />} />
+          <Route path="chat" element={<Chat />} />
+          <Route path="meeting" element={<MeetingPage />} />
           <Route
             path="board"
             element={

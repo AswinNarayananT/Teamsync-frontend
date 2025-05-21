@@ -1,21 +1,11 @@
 import { useSelector } from "react-redux";
 import IssueSection from "../IssueSection";
 
-const IssueList = ({ selectedParents }) => {
+const IssueList = () => {
   const { sprints, issues } = useSelector((state) => state.currentWorkspace);
 
-  // Ensure selectedParents is always an array
-  const safeSelectedParents = Array.isArray(selectedParents) ? selectedParents : [];
-
-  const isMatch = (issue) => {
-    if (safeSelectedParents.length === 0) return true;
-    if (safeSelectedParents.includes("none") && !issue.parent) return true;
-    if (issue.parent && safeSelectedParents.includes(issue.parent)) return true;
-    return false;
-  };
-
   const getSprintIssues = (sprintId) =>
-    issues.filter((issue) => issue.sprint === sprintId && isMatch(issue));
+    issues.filter((issue) => issue.sprint === sprintId);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";

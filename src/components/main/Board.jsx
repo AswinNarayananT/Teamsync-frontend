@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useDrop } from "react-dnd";
 import {
   updateIssueStatus,
+  fetchSprintsInProject,
   fetchActiveSprintIssues,
   fetchEpics,
-  fetchProjectIssues
 } from "../../redux/currentworkspace/currentWorkspaceThunk";
 import SprintItem from "../issue/SprintItem";
 import BackLogTopBar from "../BackLogTopBar";
@@ -23,67 +23,64 @@ const Board = () => {
     (state) => state.currentWorkspace.currentProject?.id
   );
 
-  const [issuesByStatus, setIssuesByStatus] = useState({
-    todo: [],
-    in_progress: [],
-    review: [],
-    done: [],
-  });
+  const issues = useSelector((state) => state.currentWorkspace.issues);
+  const sprints = useSelector((state) => state.currentWorkspace.sprints);
+
 
   const [showEpic, setShowEpic] = useState(true);
   const [selectedParents, setSelectedParents] = useState([]);
   const [selectedSprint, setSelectedSprint] = useState([]);
-  const [sprintList, setSprintList] = useState([]);
-
-  const fetchIssues = async () => {
-    try {
-      dispatch(fetchEpics({ projectId }));
-      dispatch(fetchProjectIssues(projectId));
-      const data = await dispatch(fetchActiveSprintIssues(projectId)).unwrap();
-      const sprints = Array.isArray(data?.sprints) ? data.sprints : [];
-      const issues = Array.isArray(data?.issues) ? data.issues : [];
-
-      const grouped = {
-        todo: [],
-        in_progress: [],
-        review: [],
-        done: [],
-      };
-
-      issues.forEach((issue) => {
-        if (grouped[issue.status]) {
-          grouped[issue.status].push(issue);
-        }
-      });
-
-      setIssuesByStatus(grouped);
-      setSprintList(sprints);
-    } catch (err) {
-      console.error("Error fetching active sprint issues:", err);
-    }
-  };
-
-  const handleStatusChange = (issueId, newStatus) => {
-    setIssuesByStatus((prev) => {
-      const updated = { ...prev };
-      for (const status in updated) {
-        updated[status] = updated[status].filter((issue) => issue.id !== issueId);
-      }
-
-      const issue = Object.values(prev).flat().find((i) => i.id === issueId);
-      if (issue) {
-        updated[newStatus].push({ ...issue, status: newStatus });
-      }
-
-      return updated;
-    });
-  };
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const sprintOptions=sprints.filter((sprint) => sprint.is_active === true)
 
   useEffect(() => {
-    if (projectId) {
-      fetchIssues();
-    }
-  }, [dispatch, projectId]);
+    if (!projectId) return;
+    dispatch(fetchEpics({ projectId }));
+    dispatch(fetchSprintsInProject(projectId));
+    dispatch(
+      fetchActiveSprintIssues({
+        projectId,
+        parentIds: selectedParents,
+        sprintIds: selectedSprint,
+        assigneeIds: selectedMembers,  
+      })
+    );
+
+  }, [dispatch, projectId, selectedParents, selectedSprint, selectedMembers]);  
+
+  useEffect(() => {
+    if (!projectId) return;
+    dispatch(
+      fetchActiveSprintIssues({
+        projectId,
+        parentIds: selectedParents,
+        sprintIds: selectedSprint,
+        assigneeIds: selectedMembers,  
+      })
+    );
+  }, [sprints]);  
+
+  const issuesByStatus = useMemo(() => {
+    const grouped = {
+      todo: [],
+      in_progress: [],
+      review: [],
+      done: [],
+    };
+
+    issues.forEach((issue) => {
+      if (grouped[issue.status]) {
+        grouped[issue.status].push(issue);
+      }
+    });
+
+    return grouped;
+  }, [issues]);
+
+  const handleStatusChange = (issueId, newStatus) => {
+    dispatch(updateIssueStatus({ issueId, status: newStatus }));
+    // Local optimistic update is no longer needed since Redux state will update from API
+  };
 
   return (
     <div className="transition-opacity duration-300 ease-in-out opacity-100 animate-fadeIn">
@@ -97,10 +94,12 @@ const Board = () => {
           setShowEpic={setShowEpic}
           selectedParents={selectedParents}
           setSelectedParents={setSelectedParents}
+          selectedMembers={selectedMembers}
+          setSelectedMembers={setSelectedMembers}
           showSprintControls={true}
           selectedSprint={selectedSprint}
           setSelectedSprint={setSelectedSprint}
-          sprintOptions={sprintList}
+          sprintOptions={sprintOptions}
         />
 
         {/* Sprint Columns */}
@@ -109,10 +108,7 @@ const Board = () => {
             const [, drop] = useDrop({
               accept: "issue",
               drop: (item) => {
-                if (item && item.id) {
-                  dispatch(
-                    updateIssueStatus({ issueId: item.id, status: col.status })
-                  );
+                if (item?.id) {
                   handleStatusChange(item.id, col.status);
                 }
               },

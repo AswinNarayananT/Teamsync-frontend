@@ -6,7 +6,7 @@ import MoreHorizSharpIcon from "@mui/icons-material/MoreHorizSharp";
 const IssueOptionsDropdown = ({ issue }) => {
   const dispatch = useDispatch();
   const sprints = useSelector((state) => state.currentWorkspace.sprints);
-  const projectId = useSelector((state) => state.currentWorkspace.currentProject.id);
+  const projectId = useSelector((state) => state.currentWorkspace.currentProject?.id);
   
   const [showOptions, setShowOptions] = useState(false);
   const dropdownRef = useRef(null);

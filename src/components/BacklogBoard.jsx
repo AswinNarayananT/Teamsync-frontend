@@ -1,7 +1,6 @@
   import React, { useState, useEffect } from "react";
   import { useDispatch, useSelector } from "react-redux";
   import { fetchEpics, fetchProjectIssues,fetchSprintsInProject } from "../redux/currentworkspace/currentWorkspaceThunk";
-  import IssueModal from "./IssueModal";
   import EpicSection from "./EpicSection";
   import BackLogTopBar from "./BackLogTopBar";
   import IssueList from "./issue/IssueList ";
@@ -10,11 +9,11 @@
   const BacklogBoard = () => {
     const dispatch = useDispatch();
     const currentProject = useSelector((state) => state.currentWorkspace.currentProject);
+    const sprints = useSelector((state) => state.currentWorkspace.sprints);
     const [showEpic, setShowEpic] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState("create");
-    const [modalType, setModalType] = useState("task");
     const [selectedParents, setSelectedParents] = useState([]);
+    const [selectedMembers, setSelectedMembers] = useState([]);
 
     useEffect(() => {
       if (currentProject) {
@@ -22,16 +21,29 @@
 
         dispatch(fetchEpics({ projectId }));
 
-        dispatch(fetchProjectIssues(projectId));
-
         dispatch(fetchSprintsInProject(projectId));
+
 
       }
     }, [dispatch, currentProject ]);
 
+    useEffect(() => {
+    if (currentProject) {
+      const projectId = currentProject.id;
+
+      const filters = {
+        epics: selectedParents,
+        assignees: selectedMembers.includes("none")
+          ? selectedMembers.filter((id) => id !== "none")
+          : selectedMembers,
+        unassigned: selectedMembers.includes("none"),
+      };
+
+      dispatch(fetchProjectIssues({ projectId, filters }));
+    }
+  }, [dispatch, currentProject, selectedParents, selectedMembers,sprints]);
+
     const openCreateIssueModal = () => {
-      setModalType("task");
-      setModalMode("create");
       setIsModalOpen(true);
     };
 
@@ -61,6 +73,8 @@
           setShowEpic={setShowEpic}
           selectedParents={selectedParents}
           setSelectedParents={setSelectedParents}
+          selectedMembers={selectedMembers}
+          setSelectedMembers={setSelectedMembers}
         />
 
         <div className="flex mt-4">
@@ -73,7 +87,7 @@
 
         {/* Issue Section */}
           <div className={`flex-1 relative overflow-visible ${showEpic ? 'm-2' : 'space-y-6 m-1'}`}>      
-          <IssueList selectedParents={selectedParents} />
+          <IssueList  />
           </div>
         </div>
 
