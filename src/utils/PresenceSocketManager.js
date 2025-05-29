@@ -1,9 +1,11 @@
 class PresenceSocketManager {
-  constructor(currentUserId, workspaceId, onStatusUpdate) {
+  constructor(currentUserId, workspaceId, onStatusUpdate, onChatSummaryUpdate) {
     this.socket = null;
     this.currentUserId = currentUserId;
     this.workspaceId = workspaceId;
-    this.onStatusUpdate = onStatusUpdate;
+
+    this.onStatusUpdate = onStatusUpdate;            
+    this.onChatSummaryUpdate = onChatSummaryUpdate;
 
     this.pendingChecks = new Map();
   }
@@ -15,25 +17,46 @@ class PresenceSocketManager {
 
     this.socket.onopen = () => {
       console.log("✅ Presence WebSocket connected");
+
+      // Get initial unread count and last message for all chats
+      this.sendMessage({ type: "get_unread_summary" });
     };
 
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      const { type, user_id, status } = data;
+      const { type } = data;
 
+      // Handle presence status updates
       if (type === "presence" || type === "presence_check") {
+        const { user_id, status } = data;
         const isOnline = status === "online";
 
-        // Global UI update
         if (this.onStatusUpdate) {
           this.onStatusUpdate(user_id, isOnline);
         }
 
-        // Callback for check_user
         if (type === "presence_check" && this.pendingChecks.has(user_id)) {
           this.pendingChecks.get(user_id)(isOnline);
           this.pendingChecks.delete(user_id);
         }
+      }
+
+      // Handle unread count and last message summary updates
+      if ((type === "unread_summary" || type === "chat_message_update") && this.onChatSummaryUpdate) {
+        const summary = data.data || [];
+
+        const unreadCounts = {};
+        const lastMessages = [];
+
+        for (const item of summary) {
+          lastMessages.push(item);
+          unreadCounts[item.user_id] = item.unread_count;
+        }
+
+        this.onChatSummaryUpdate({
+          lastMessages,
+          unreadCounts,
+        });
       }
     };
 
@@ -54,10 +77,6 @@ class PresenceSocketManager {
     }
   }
 
-  /**
-   * Send a check for a specific user’s online status.
-   * Will trigger `onStatusUpdate` AND call optional callback.
-   */
   checkUserOnline(userId, callback) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       console.warn("Presence socket not connected.");
@@ -68,12 +87,34 @@ class PresenceSocketManager {
       this.pendingChecks.set(userId, callback);
     }
 
-    this.socket.send(
-      JSON.stringify({
-        type: "check_user",
-        user_id: userId,
-      })
-    );
+    this.sendMessage({
+      type: "check_user",
+      user_id: userId,
+    });
+  }
+
+  /**
+   * Triggered when user reads messages in a chat
+   * This will notify the backend to update unread count and last message
+   */
+  markMessagesAsRead(senderId) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
+      console.warn("Presence socket not connected.");
+      return;
+    }
+
+    this.sendMessage({
+      type: "mark_read",
+      sender_id: senderId,
+    });
+  }
+
+  sendMessage(data) {
+    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(data));
+    } else {
+      console.warn("⚠️ Socket not ready. Message not sent:", data);
+    }
   }
 }
 

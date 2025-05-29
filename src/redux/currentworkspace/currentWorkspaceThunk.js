@@ -417,3 +417,31 @@ export const completeSprint = createAsyncThunk(
   }
 );
 
+
+export const createMeeting = createAsyncThunk(
+  'meeting/createMeeting',
+  async ({ projectId, meetingData }, { rejectWithValue }) => {
+    try {
+      const res = await api.post(`/api/v1/realtime/projects/${projectId}/meetings/create/`, meetingData);
+      return res.data;
+    } catch (error) {
+  console.error('Create meeting error:', error.response?.data);
+  return rejectWithValue(error.response?.data || "Something went wrong");
+}
+  }
+);
+
+
+
+export const fetchUpcomingMeetings = createAsyncThunk(
+  'meeting/fetchUpcomingMeetings',
+  async ({ workspaceId }, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/api/v1/realtime/workspaces/${workspaceId}/meetings/upcoming/`);
+      return res.data;
+    } catch (error) {
+      console.error('Fetch upcoming meetings error:', error.response?.data);
+      return rejectWithValue(error.response?.data || 'Something went wrong');
+    }
+  }
+);

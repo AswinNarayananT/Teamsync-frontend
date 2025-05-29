@@ -25,6 +25,7 @@ import Board from "./components/main/Board";
 import ProjectList from "./components/project/ProjectList";
 import Chat from "./components/realtime/Chat";
 import MeetingPage from "./components/realtime/Meeting";
+import JoinMeetingPage from "./components/realtime/VideoCallManager";
 
 
 
@@ -51,6 +52,8 @@ function App() {
           <Route path="projects" element={<ProjectList />} />
           <Route path="chat" element={<Chat />} />
           <Route path="meeting" element={<MeetingPage />} />
+          <Route path="join-meeting" element={<JoinMeetingPage />} />
+
           <Route
             path="board"
             element={

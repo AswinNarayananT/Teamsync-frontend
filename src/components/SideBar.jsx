@@ -18,7 +18,7 @@ const Sidebar = ({ role, collapsed, setCollapsed }) => {
         { icon: "dashboard", text: "Dashboard", path: "/dashboard" },
         { icon: "backlog", text: "Backlog", path: "/dashboard/backlog" },
         { icon: "board", text: "Board", path: "/dashboard/board" },
-        { icon: "notification", text: "Notification", path: "/dashboard/notification" },
+        // { icon: "notification", text: "Notification", path: "/dashboard/notification" },
         { icon: "chat", text: "Chat", path: "/dashboard/chat" },
         { icon: "meeting", text: "Meeting", path: "/dashboard/meeting" },
         { icon: "team", text: "Teams & Members", path: "/dashboard/team" },
@@ -37,7 +37,7 @@ const Sidebar = ({ role, collapsed, setCollapsed }) => {
     {
       title: "Communication",
       items: menuItems.filter(item => 
-        ["/dashboard/notification", "/dashboard/chat", "/dashboard/meeting"].includes(item.path)
+        [ "/dashboard/chat", "/dashboard/meeting"].includes(item.path)
       )
     },
     {

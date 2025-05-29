@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Formik, Form, Field, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
+import { createMeeting, fetchUpcomingMeetings } from '../../redux/currentworkspace/currentWorkspaceThunk';
+import { toast } from 'react-toastify';
 
 const MeetingPage = () => {
-  const role = useSelector((state) => state.currentWorkspace.currentWorkspace.role);
+  const dispatch = useDispatch();
+  const currentWorkspace = useSelector((state) => state.currentWorkspace.currentWorkspace);
+  const workspaceId = currentWorkspace?.id;
+  const role = currentWorkspace?.role;
   const members = useSelector((state) => state.currentWorkspace.members);
-  const userMeetings = [];
+  const projectId = useSelector(state => state.currentWorkspace.currentProject?.id);
+  const [userMeetings, setUserMeetings] = useState([]);
   const recentMeetings = [];
 
   const isPrivileged = role === 'owner' || role === 'manager';
-  const [activeTab, setActiveTab] = useState('your'); // your, schedule, recent
+  const [activeTab, setActiveTab] = useState('your');
 
   const initialValues = {
     dateTime: '',
@@ -20,19 +26,58 @@ const MeetingPage = () => {
   const validationSchema = Yup.object().shape({
     dateTime: Yup.date()
       .required('Required')
-      .test('is-future', 'Meeting must be at least 15 minutes from now', function (value) {
+      .test('is-future', 'Meeting must be at least 5 minutes from now', function (value) {
         const diff = (new Date(value) - new Date()) / (1000 * 60);
-        return diff >= 15;
+        return diff >= 3;
       }),
     participants: Yup.array().min(1, 'Select at least one participant'),
   });
 
-  const handleSubmit = (values, { setSubmitting }) => {
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
+    if (!projectId) {
+      toast.error('No active project selected.');
+      setSubmitting(false);
+      return;
+    }
+
     const payload = {
-      datetime: values.dateTime,
+      title: 'Scheduled Meeting', // or from form
+      start_time: new Date(values.dateTime).toISOString(),
       participants: values.participants,
     };
+
+    try {
+      const resultAction = await dispatch(createMeeting({ projectId, meetingData: payload }));
+
+      if (createMeeting.fulfilled.match(resultAction)) {
+        toast.success('Meeting scheduled successfully!');
+        resetForm();
+      } else {
+        toast.error(resultAction.payload?.message || 'Failed to schedule meeting');
+      }
+    } catch (error) {
+      toast.error('Unexpected error scheduling meeting');
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  useEffect(() => {
+    async function loadMeetings() {
+      if (activeTab === 'your' && workspaceId) {
+        try {
+          // unwrap to get the actual meetings array from the fulfilled thunk
+          const meetings = await dispatch(fetchUpcomingMeetings({ workspaceId })).unwrap();
+          setUserMeetings(Array.isArray(meetings) ? meetings : []);
+        } catch (error) {
+          console.error('Failed to fetch meetings:', error);
+          setUserMeetings([]);
+        }
+      }
+    }
+
+    loadMeetings();
+  }, [activeTab, workspaceId, dispatch]);
 
   return (
     <div className="p-4 sm:p-6 md:p-10 bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -93,11 +138,16 @@ const MeetingPage = () => {
                     className="border rounded-lg p-3 bg-gray-100 dark:bg-gray-700 hover:shadow-md transition"
                   >
                     <div className="text-sm">
-                      <strong>Date:</strong> {new Date(m.datetime).toLocaleString()}
+                      <strong>Date:</strong>{' '}
+                      {m.start_time
+                        ? new Date(m.start_time).toLocaleString()
+                        : 'Date not available'}
                     </div>
                     <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                       <strong>With:</strong>{' '}
-                      {m.participants.map((p) => p.name || p.email).join(', ')}
+                      {Array.isArray(m.participants) && m.participants.length > 0
+                        ? m.participants.map((p) => p.name || p.email || 'Unknown').join(', ')
+                        : 'No participants'}
                     </div>
                   </div>
                 ))}
@@ -205,11 +255,16 @@ const MeetingPage = () => {
                     className="border rounded-lg p-3 bg-gray-100 dark:bg-gray-700 hover:shadow-md transition"
                   >
                     <div className="text-sm">
-                      <strong>Date:</strong> {new Date(m.datetime).toLocaleString()}
+                      <strong>Date:</strong>{' '}
+                      {m.start_time
+                        ? new Date(m.start_time).toLocaleString()
+                        : 'Date not available'}
                     </div>
                     <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                      <strong>Participants:</strong>{' '}
-                      {m.participants.map((p) => p.name || p.email).join(', ')}
+                      <strong>With:</strong>{' '}
+                      {Array.isArray(m.participants) && m.participants.length > 0
+                        ? m.participants.map((p) => p.name || p.email || 'Unknown').join(', ')
+                        : 'No participants'}
                     </div>
                   </div>
                 ))}
