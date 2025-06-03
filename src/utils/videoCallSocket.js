@@ -1,10 +1,10 @@
 let socket = null;
 let onIncomingCallCallback = null;
 
-// Convert http(s) to ws(s)
 const baseApiUrl = import.meta.env.VITE_API_URL;
 const wsProtocol = baseApiUrl.startsWith("https") ? "wss" : "ws";
-const wsUrl = baseApiUrl.replace(/^http/, wsProtocol);
+const wsUrl = baseApiUrl.replace(/^https?/, wsProtocol);
+
 
 export const connectVideoSocket = (currentUserId) => {
   if (!currentUserId) {

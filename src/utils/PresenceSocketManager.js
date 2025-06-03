@@ -15,7 +15,8 @@ class PresenceSocketManager {
 
     const baseApiUrl = import.meta.env.VITE_API_URL;
     const wsProtocol = baseApiUrl.startsWith("https") ? "wss" : "ws";
-    const wsUrl = baseApiUrl.replace(/^http/, wsProtocol);
+    const wsUrl = baseApiUrl.replace(/^https?/, wsProtocol);
+
 
     this.socket = new WebSocket(`${wsUrl}/ws/online/${this.workspaceId}/`);
 
