@@ -73,8 +73,12 @@ export default function Chat() {
         socketRef.current = null;
       }
 
-      // Build WebSocket URL from VITE_API_URL
-      const baseUrl = import.meta.env.VITE_API_URL.replace(/^http/, 'ws');
+      const apiUrl = import.meta.env.VITE_API_URL;
+
+      const baseUrl = apiUrl.startsWith('https://')
+        ? apiUrl.replace('https://', 'wss://')
+        : apiUrl.replace('http://', 'ws://');
+
       const chatUrl = `${baseUrl}/ws/chat/${currentWorkspace.id}/${selectedUser.user_id}/`;
 
       // Open new WebSocket connection

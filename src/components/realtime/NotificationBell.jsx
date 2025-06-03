@@ -22,8 +22,10 @@ useEffect(() => {
 
   const delay = setTimeout(() => {
     console.log('✅ Creating new WebSocket for user:', user.email);
-
-    const baseURL = import.meta.env.VITE_API_URL.replace(/^http/, 'ws');
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const baseUrl = apiUrl.startsWith('https://')
+  ? apiUrl.replace('https://', 'wss://')
+  : apiUrl.replace('http://', 'ws://');
     const socket = new WebSocket(`${baseURL}/ws/notifications/`);
     socketRef.current = socket;
 
