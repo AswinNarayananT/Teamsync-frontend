@@ -26,7 +26,7 @@ import ProjectList from "./components/project/ProjectList";
 import Chat from "./components/realtime/Chat";
 import MeetingPage from "./components/realtime/Meeting";
 import JoinMeetingPage from "./components/realtime/VideoCallManager";
-
+import AdminDashboard from "./pages/AdminDashboard";
 
 
 function App() {
@@ -77,7 +77,7 @@ function App() {
         {/* Admin Protected Routes */}
         <Route element={<ProtectedAdminRoute />}>
           <Route path="/adminpanel" element={<AdminPanel />} >
-            <Route index element={<h1 className="text-white text-2xl p-6">👨‍💼 Welcome, Admin!</h1>} />
+            <Route index element={<AdminDashboard />} />
             <Route path="workspaces" element={<WorkSpaces />} />
             <Route path="plans" element={<Plans />} />
           </Route>

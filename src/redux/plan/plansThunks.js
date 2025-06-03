@@ -68,3 +68,18 @@ export const removePlan = createAsyncThunk(
     }
   }
 );
+
+
+export const fetchPlanStats = createAsyncThunk(
+  "plans/fetchPlanStats",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/api/v1/adminpanel/plans-stats/");
+      console.log("✅ Plan Stats fetched successfully");
+      return response.data;  // returns the array of plan stats
+    } catch (error) {
+      console.error("❌ Failed to fetch plan stats:", error.response?.data);
+      return rejectWithValue(error.response?.data?.error || "Failed to fetch plan stats");
+    }
+  }
+);
