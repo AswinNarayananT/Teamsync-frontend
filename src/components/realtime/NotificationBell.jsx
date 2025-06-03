@@ -19,9 +19,12 @@ useEffect(() => {
   }
 
   if (!user) return;
+
   const delay = setTimeout(() => {
     console.log('✅ Creating new WebSocket for user:', user.email);
-    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/notifications/`);
+
+    const baseURL = import.meta.env.VITE_API_URL.replace(/^http/, 'ws');
+    const socket = new WebSocket(`${baseURL}/ws/notifications/`);
     socketRef.current = socket;
 
     socket.onopen = () => {
@@ -53,7 +56,7 @@ useEffect(() => {
     socket.onclose = () => {
       console.warn('❌ WebSocket disconnected');
     };
-  }, 200); 
+  }, 200);
 
   return () => {
     clearTimeout(delay);
@@ -63,6 +66,7 @@ useEffect(() => {
     }
   };
 }, [user]);
+
 
 
 

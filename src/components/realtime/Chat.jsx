@@ -58,83 +58,88 @@ export default function Chat() {
 
   // WebSocket connection for chat, recreated when selectedUser or workspace changes
   useEffect(() => {
-    if (!currentUser?.id || !selectedUser || !currentWorkspace?.id) return;
+  if (!currentUser?.id || !selectedUser || !currentWorkspace?.id) return;
 
-    let ws;
+  let ws;
 
-    (async () => {
-      try {
-        await api.get('api/v1/realtime/auth/validate/');
-        setIsValidated(true);
+  (async () => {
+    try {
+      await api.get('api/v1/realtime/auth/validate/');
+      setIsValidated(true);
 
-        // Close existing socket if any
-        if (socketRef.current) {
-          socketRef.current.close();
-          socketRef.current = null;
-        }
-
-        // Open new WebSocket connection for current chat user
-        ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${currentWorkspace.id}/${selectedUser.user_id}/`);
-        socketRef.current = ws;
-
-        ws.onopen = () => {
-          console.log('WebSocket connected');
-          ws.send(JSON.stringify({ type: 'fetch_history' }));
-        };
-
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-
-          if (data.type === 'chat_message') {
-            setMessages((prev) => ({
-              ...prev,
-              [selectedUser.user_id]: [...(prev[selectedUser.user_id] || []), data.message],
-            }));
-
-            // Mark message delivered and read if receiver is current user
-            if (data.message.receiver === currentUser.id) {
-              ws.send(JSON.stringify({ type: 'mark_delivered', message_id: data.message.id }));
-              ws.send(JSON.stringify({ type: 'mark_read', message_ids: [data.message.id] }));
-            }
-          } else if (data.type === 'chat_history') {
-            setMessages((prev) => ({
-              ...prev,
-              [selectedUser.user_id]: data.messages,
-            }));
-          } else if (data.type === 'read_update') {
-            const { message_ids } = data;
-            setMessages((prev) => {
-              const updated = { ...prev };
-              const updatedMessages = updated[selectedUser.user_id]?.map((msg) =>
-                message_ids.includes(msg.id) ? { ...msg, is_read: true } : msg
-              );
-              return {
-                ...updated,
-                [selectedUser.user_id]: updatedMessages,
-              };
-            });
-          }
-        };
-
-        ws.onclose = () => console.log('WebSocket disconnected');
-        ws.onerror = (error) => console.error('WebSocket error', error);
-      } catch (error) {
-        dispatch(logoutUser());
-        setSelectedUser(null);
-        setIsValidated(false);
-        if (ws) ws.close();
-        if (socketRef.current) {
-          socketRef.current.close();
-          socketRef.current = null;
-        }
+      // Close existing socket if any
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
       }
-    })();
 
-    // Cleanup on unmount or dependencies change
-    return () => {
+      // Build WebSocket URL from VITE_API_URL
+      const baseUrl = import.meta.env.VITE_API_URL.replace(/^http/, 'ws');
+      const chatUrl = `${baseUrl}/ws/chat/${currentWorkspace.id}/${selectedUser.user_id}/`;
+
+      // Open new WebSocket connection
+      ws = new WebSocket(chatUrl);
+      socketRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        ws.send(JSON.stringify({ type: 'fetch_history' }));
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'chat_message') {
+          setMessages((prev) => ({
+            ...prev,
+            [selectedUser.user_id]: [...(prev[selectedUser.user_id] || []), data.message],
+          }));
+
+          // Mark message delivered and read if receiver is current user
+          if (data.message.receiver === currentUser.id) {
+            ws.send(JSON.stringify({ type: 'mark_delivered', message_id: data.message.id }));
+            ws.send(JSON.stringify({ type: 'mark_read', message_ids: [data.message.id] }));
+          }
+        } else if (data.type === 'chat_history') {
+          setMessages((prev) => ({
+            ...prev,
+            [selectedUser.user_id]: data.messages,
+          }));
+        } else if (data.type === 'read_update') {
+          const { message_ids } = data;
+          setMessages((prev) => {
+            const updated = { ...prev };
+            const updatedMessages = updated[selectedUser.user_id]?.map((msg) =>
+              message_ids.includes(msg.id) ? { ...msg, is_read: true } : msg
+            );
+            return {
+              ...updated,
+              [selectedUser.user_id]: updatedMessages,
+            };
+          });
+        }
+      };
+
+      ws.onclose = () => console.log('WebSocket disconnected');
+      ws.onerror = (error) => console.error('WebSocket error', error);
+    } catch (error) {
+      dispatch(logoutUser());
+      setSelectedUser(null);
+      setIsValidated(false);
       if (ws) ws.close();
-    };
-  }, [selectedUser, currentUser?.id, currentWorkspace?.id, dispatch]);
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+    }
+  })();
+
+  // Cleanup on unmount or dependency change
+  return () => {
+    if (ws) ws.close();
+  };
+}, [selectedUser, currentUser?.id, currentWorkspace?.id, dispatch]);
+
 
   // Scroll to bottom on new messages or user change
   useEffect(() => {

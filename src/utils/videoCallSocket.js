@@ -1,6 +1,11 @@
 let socket = null;
 let onIncomingCallCallback = null;
 
+// Convert http(s) to ws(s)
+const baseApiUrl = import.meta.env.VITE_API_URL;
+const wsProtocol = baseApiUrl.startsWith("https") ? "wss" : "ws";
+const wsUrl = baseApiUrl.replace(/^http/, wsProtocol);
+
 export const connectVideoSocket = (currentUserId) => {
   if (!currentUserId) {
     console.warn("Video socket: Missing current user ID.");
@@ -12,7 +17,7 @@ export const connectVideoSocket = (currentUserId) => {
     return;
   }
 
-  socket = new WebSocket('ws://127.0.0.1:8000/ws/video-call/');
+  socket = new WebSocket(`${wsUrl}/ws/video-call/`);
 
   socket.onopen = () => {
     console.log(`[Video Socket] Connected as user ${currentUserId}`);
@@ -24,7 +29,7 @@ export const connectVideoSocket = (currentUserId) => {
 
   socket.onclose = (event) => {
     console.log("[Video Socket] Disconnected.", event.reason);
-    socket = null; 
+    socket = null;
   };
 
   socket.onmessage = (event) => {
@@ -41,24 +46,23 @@ export const connectVideoSocket = (currentUserId) => {
   };
 };
 
-  export const callUser = (fromUserId, toUserId) => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      console.warn("[Video Socket] Cannot call user, socket not connected.");
-      return null;
-    }
+export const callUser = (fromUserId, toUserId) => {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.warn("[Video Socket] Cannot call user, socket not connected.");
+    return null;
+  }
 
-    const timestamp = new Date().toISOString().replace(/[:.-]/g, '');
-    const roomID = `${fromUserId}_${toUserId}_${timestamp}`;
+  const timestamp = new Date().toISOString().replace(/[:.-]/g, '');
+  const roomID = `${fromUserId}_${toUserId}_${timestamp}`;
 
+  socket.send(JSON.stringify({
+    action: 'call_user',
+    to_user_id: toUserId,
+    room_id: roomID,
+  }));
 
-    socket.send(JSON.stringify({
-      action: 'call_user',
-      to_user_id: toUserId,
-      room_id: roomID,
-    }));
-
-    return roomID;
-  };
+  return roomID;
+};
 
 export const onIncomingCall = (callback) => {
   if (typeof callback === 'function') {

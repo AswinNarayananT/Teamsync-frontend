@@ -13,7 +13,12 @@ class PresenceSocketManager {
   connect() {
     if (this.socket) return;
 
-    this.socket = new WebSocket(`ws://127.0.0.1:8000/ws/online/${this.workspaceId}/`);
+    const baseApiUrl = import.meta.env.VITE_API_URL;
+    const wsProtocol = baseApiUrl.startsWith("https") ? "wss" : "ws";
+    const wsUrl = baseApiUrl.replace(/^http/, wsProtocol);
+
+    this.socket = new WebSocket(`${wsUrl}/ws/online/${this.workspaceId}/`);
+
 
     this.socket.onopen = () => {
       console.log("✅ Presence WebSocket connected");
