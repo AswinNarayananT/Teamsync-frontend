@@ -253,7 +253,6 @@ export default function Chat() {
                   </div>
                 )}
 
-                {/* ✅ Online Status Indicator */}
                 {isOnline && (
                   <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-[#1f2c34] rounded-full" />
                 )}

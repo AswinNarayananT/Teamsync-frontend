@@ -14,7 +14,6 @@ const usePresenceSocket = (userId, workspaceId) => {
       userId,
       workspaceId,
 
-      // ✅ Properly merge onlineStatus updates
       (user_id, isOnline) => {
         setOnlineStatus((prevStatus) => ({
           ...prevStatus,
@@ -22,7 +21,6 @@ const usePresenceSocket = (userId, workspaceId) => {
         }));
       },
 
-      // ✅ Handle chat summary update
       ({ lastMessages, unreadCounts }) => {
         console.log("📬 Chat Summary Received:");
         console.log("🕒 Last Messages:", lastMessages);
@@ -46,7 +44,7 @@ const usePresenceSocket = (userId, workspaceId) => {
     unreadCounts,
     lastMessages,
     onlineStatus,
-    socket: socketRef.current, // gives you access to methods like checkUserOnline()
+    socket: socketRef.current, 
   };
 };
 

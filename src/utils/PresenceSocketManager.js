@@ -93,10 +93,6 @@ class PresenceSocketManager {
     });
   }
 
-  /**
-   * Triggered when user reads messages in a chat
-   * This will notify the backend to update unread count and last message
-   */
   markMessagesAsRead(senderId) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       console.warn("Presence socket not connected.");

@@ -196,3 +196,15 @@ export const changePassword = createAsyncThunk(
     }
   }
 );
+
+export const fetchProjectDetails = createAsyncThunk(
+  "project/fetchProjectDetails",
+  async (projectId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/accounts/dashboard/projects/${projectId}/`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);

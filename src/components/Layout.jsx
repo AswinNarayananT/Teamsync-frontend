@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Sidebar from "./sidebar";
+import Sidebar from "./Sidebar";
 import TopNavigation from "./TopNavigation";
 
 const Layout = ({ role, activeSection, setActiveSection, children }) => {
