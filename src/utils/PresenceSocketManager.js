@@ -13,18 +13,17 @@ class PresenceSocketManager {
   connect() {
     if (this.socket) return;
 
-    const baseApiUrl = import.meta.env.VITE_API_URL;
-    const wsProtocol = baseApiUrl.startsWith("https") ? "wss" : "ws";
+    const baseApiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); 
+    const wsProtocol = baseApiUrl.startsWith('https') ? 'wss' : 'ws';
     const wsUrl = baseApiUrl.replace(/^https?/, wsProtocol);
 
+    this.socket = new WebSocket(`${wsUrl}/ws/online/${this.workspaceId}/`); 
 
-    this.socket = new WebSocket(`${wsUrl}/ws/online/${this.workspaceId}/`);
 
 
     this.socket.onopen = () => {
       console.log("✅ Presence WebSocket connected");
 
-      // Get initial unread count and last message for all chats
       this.sendMessage({ type: "get_unread_summary" });
     };
 
@@ -32,7 +31,6 @@ class PresenceSocketManager {
       const data = JSON.parse(event.data);
       const { type } = data;
 
-      // Handle presence status updates
       if (type === "presence" || type === "presence_check") {
         const { user_id, status } = data;
         const isOnline = status === "online";
@@ -47,7 +45,6 @@ class PresenceSocketManager {
         }
       }
 
-      // Handle unread count and last message summary updates
       if ((type === "unread_summary" || type === "chat_message_update") && this.onChatSummaryUpdate) {
         const summary = data.data || [];
 

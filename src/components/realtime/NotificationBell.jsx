@@ -22,12 +22,15 @@ useEffect(() => {
 
   const delay = setTimeout(() => {
     console.log('✅ Creating new WebSocket for user:', user.email);
-    const apiUrl = import.meta.env.VITE_API_URL;
-    const baseUrl = apiUrl.startsWith('https://')
-  ? apiUrl.replace('https://', 'wss://')
-  : apiUrl.replace('http://', 'ws://');
+    const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); 
+    const baseURL = apiUrl.replace(/^https?:\/\//, (match) =>
+      match === 'https://' ? 'wss://' : 'ws://'
+    );
+
     const socket = new WebSocket(`${baseURL}/ws/notifications/`);
     socketRef.current = socket;
+
+
 
     socket.onopen = () => {
       console.log('🔔 WebSocket connected');

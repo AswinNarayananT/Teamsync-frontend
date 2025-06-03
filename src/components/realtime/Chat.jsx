@@ -15,9 +15,22 @@ export default function Chat() {
   const currentWorkspace = useSelector((state) => state.currentWorkspace.currentWorkspace || {});
   const members = useSelector((state) => state.currentWorkspace.members || []);
   const currentUser = useSelector((state) => state.auth.user);
+  
 
 
-  const { unreadCounts, lastMessages, onlineStatus } = usePresenceSocket(currentUser?.id, currentWorkspace?.id);
+   const { unreadCounts, lastMessages, onlineStatus } = usePresenceSocket(
+    currentUser?.id,
+    currentWorkspace?.id
+  );
+
+
+  const [localUnreadCounts, setLocalUnreadCounts] = useState({});
+
+  useEffect(() => {
+    setLocalUnreadCounts(unreadCounts);
+  }, [unreadCounts]);
+
+
 
   const containerRef = useRef(null);
   const socketRef = useRef(null);
@@ -26,7 +39,7 @@ export default function Chat() {
 
   const [selectedUser, setSelectedUser] = useState(null);
   const [messageInput, setMessageInput] = useState('');
-  const [messages, setMessages] = useState({}); // messages grouped by user_id
+  const [messages, setMessages] = useState({}); 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isValidated, setIsValidated] = useState(null);
@@ -35,17 +48,14 @@ export default function Chat() {
   const selectedUserStatus = onlineStatus[selectedUser?.user_id];
   const chatMessages = selectedUser ? messages[selectedUser.user_id] || [] : [];
 
-  // Filter out current user from member list for chat
   const filteredMembers = members.filter((m) => m.user_id !== currentUser?.id);
 
-  // Responsive mobile toggle
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Close emoji picker if clicked outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
@@ -56,7 +66,6 @@ export default function Chat() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // WebSocket connection for chat, recreated when selectedUser or workspace changes
   useEffect(() => {
   if (!currentUser?.id || !selectedUser || !currentWorkspace?.id) return;
 
@@ -67,21 +76,20 @@ export default function Chat() {
       await api.get('api/v1/realtime/auth/validate/');
       setIsValidated(true);
 
-      // Close existing socket if any
       if (socketRef.current) {
         socketRef.current.close();
         socketRef.current = null;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL;
+      const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); 
 
-      const baseUrl = apiUrl.startsWith('https://')
-        ? apiUrl.replace('https://', 'wss://')
-        : apiUrl.replace('http://', 'ws://');
+      const baseUrl = apiUrl.replace(/^https?:\/\//, (match) =>
+        match === 'https://' ? 'wss://' : 'ws://'
+      );
 
       const chatUrl = `${baseUrl}/ws/chat/${currentWorkspace.id}/${selectedUser.user_id}/`;
 
-      // Open new WebSocket connection
+
       ws = new WebSocket(chatUrl);
       socketRef.current = ws;
 
@@ -99,7 +107,6 @@ export default function Chat() {
             [selectedUser.user_id]: [...(prev[selectedUser.user_id] || []), data.message],
           }));
 
-          // Mark message delivered and read if receiver is current user
           if (data.message.receiver === currentUser.id) {
             ws.send(JSON.stringify({ type: 'mark_delivered', message_id: data.message.id }));
             ws.send(JSON.stringify({ type: 'mark_read', message_ids: [data.message.id] }));
@@ -138,19 +145,16 @@ export default function Chat() {
     }
   })();
 
-  // Cleanup on unmount or dependency change
   return () => {
     if (ws) ws.close();
   };
 }, [selectedUser, currentUser?.id, currentWorkspace?.id, dispatch]);
 
 
-  // Scroll to bottom on new messages or user change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selectedUser]);
 
-  // Intersection observer to mark messages read when visible
   useEffect(() => {
     if (!containerRef.current || !socketRef.current || !chatMessages.length) return;
 
@@ -180,6 +184,17 @@ export default function Chat() {
     };
   }, [chatMessages, currentUser?.id]);
 
+  useEffect(() => {
+    if (selectedUser?.user_id && localUnreadCounts[selectedUser.user_id]) {
+      setLocalUnreadCounts((prev) => ({
+        ...prev,
+        [selectedUser.user_id]: 0,
+      }));
+    }
+  }, [selectedUser]);
+
+  
+
   const handleSendMessage = () => {
     if (!messageInput.trim() || !socketRef.current) return;
 
@@ -198,14 +213,12 @@ export default function Chat() {
     setMessageInput((prev) => prev + emojiData.emoji);
   };
 
-  // Sort members by last message timestamp descending
   const sortedMembers = filteredMembers.slice().sort((a, b) => {
     const lastA = messages[a.user_id]?.slice(-1)[0];
     const lastB = messages[b.user_id]?.slice(-1)[0];
     return new Date(lastB?.timestamp || 0) - new Date(lastA?.timestamp || 0);
   });
 
-  // Call handling
   const handleCall = async () => {
     if (window.zegoInstance && typeof window.zegoInstance.destroy === 'function') {
       await window.zegoInstance.destroy();
@@ -232,56 +245,58 @@ export default function Chat() {
         Chats
       </div>
 
-      <div className="overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-[#2a3942]">
-        {sortedMembers.map((member) => {
-          const lastMsg = lastMessages.find(
-            (msg) => msg.user_id === member.user_id
-          );
-          const lastText = lastMsg?.message || 'No messages yet';
-          const unreadCount = unreadCounts[member.user_id] || 0;
-          const isOnline = onlineStatus[member.user_id] === true;
+          <div className="overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-[#2a3942]">
+      {sortedMembers.map((member) => {
+        const lastMsg = lastMessages.find(
+          (msg) => msg.user_id === member.user_id
+        );
+        const lastText = lastMsg?.message || "No messages yet";
 
-          return (
-            <div
-              key={member.user_id}
-              onClick={() => setSelectedUser(member)}
-              className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-[#2a3942] border-b border-[#2a3942] ${
-                selectedUser?.user_id === member.user_id ? 'bg-[#2a3942]' : ''
-              }`}
-            >
-              <div className="relative">
-                {member.user_profile_picture ? (
-                  <img
-                    src={member.user_profile_picture}
-                    alt={member.user_name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
-                    <AccountCircle className="text-gray-500" fontSize="large" />
-                  </div>
-                )}
+        const unreadCount = localUnreadCounts[member.user_id] || 0;
 
-                {isOnline && (
-                  <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-[#1f2c34] rounded-full" />
-                )}
-              </div>
+        const isOnline = onlineStatus[member.user_id] === true;
 
-              <div className="flex flex-col flex-1 min-w-0">
-                <div className="font-medium truncate flex items-center justify-between">
-                  <span>{member.user_name}</span>
-                  {unreadCount > 0 && (
-                    <span className="ml-2 text-xs bg-red-600 text-white rounded-full px-2 py-0.5">
-                      {unreadCount}
-                    </span>
-                  )}
+        return (
+          <div
+            key={member.user_id}
+            onClick={() => setSelectedUser(member)}
+            className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-[#2a3942] border-b border-[#2a3942] ${
+              selectedUser?.user_id === member.user_id ? "bg-[#2a3942]" : ""
+            }`}
+          >
+            <div className="relative">
+              {member.user_profile_picture ? (
+                <img
+                  src={member.user_profile_picture}
+                  alt={member.user_name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
+                  <AccountCircle className="text-gray-500" fontSize="large" />
                 </div>
-                <div className="text-xs text-gray-400 truncate">{lastText}</div>
-              </div>
+              )}
+
+              {isOnline && (
+                <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-[#1f2c34] rounded-full" />
+              )}
             </div>
-          );
-        })}
-      </div>
+
+            <div className="flex flex-col flex-1 min-w-0">
+              <div className="font-medium truncate flex items-center justify-between">
+                <span>{member.user_name}</span>
+                {unreadCount > 0 && (
+                  <span className="ml-2 text-xs bg-red-600 text-white rounded-full px-2 py-0.5">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-400 truncate">{lastText}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
     </div>
   )}
 {/* Chat area */}
