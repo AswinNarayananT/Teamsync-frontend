@@ -66,7 +66,7 @@ export default function Chat() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   if (!currentUser?.id || !selectedUser || !currentWorkspace?.id) return;
 
   let ws;
@@ -81,14 +81,16 @@ export default function Chat() {
         socketRef.current = null;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); 
+      const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); // Remove trailing slash
 
-      const baseUrl = apiUrl.replace(/^https?:\/\//, (match) =>
-        match === 'https://' ? 'wss://' : 'ws://'
-      );
+      // Determine ws protocol with '://'
+      const wsProtocol = apiUrl.startsWith('https://') ? 'wss://' : 'ws://';
 
-      const chatUrl = `${baseUrl}/ws/chat/${currentWorkspace.id}/${selectedUser.user_id}/`;
+      // Remove http(s) protocol from apiUrl to get host + path
+      const host = apiUrl.replace(/^https?:\/\//, '');
 
+      // Construct full WebSocket URL
+      const chatUrl = `${wsProtocol}${host}/ws/chat/${currentWorkspace.id}/${selectedUser.user_id}/`;
 
       ws = new WebSocket(chatUrl);
       socketRef.current = ws;
@@ -149,6 +151,7 @@ export default function Chat() {
     if (ws) ws.close();
   };
 }, [selectedUser, currentUser?.id, currentWorkspace?.id, dispatch]);
+
 
 
   useEffect(() => {

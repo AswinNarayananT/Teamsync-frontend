@@ -13,17 +13,16 @@ class PresenceSocketManager {
   connect() {
     if (this.socket) return;
 
-    const baseApiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); 
-    const wsProtocol = baseApiUrl.startsWith('https') ? 'wss' : 'ws';
-    const wsUrl = baseApiUrl.replace(/^https?/, wsProtocol);
+    const baseApiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+    const wsProtocol = baseApiUrl.startsWith('https://') ? 'wss://' : 'ws://';
+    const host = baseApiUrl.replace(/^https?:\/\//, '');
 
-    this.socket = new WebSocket(`${wsUrl}/ws/online/${this.workspaceId}/`); 
+    const wsUrl = `${wsProtocol}${host}`;
 
-
+    this.socket = new WebSocket(`${wsUrl}/ws/online/${this.workspaceId}/`);
 
     this.socket.onopen = () => {
       console.log("✅ Presence WebSocket connected");
-
       this.sendMessage({ type: "get_unread_summary" });
     };
 

@@ -3,9 +3,9 @@ let onIncomingCallCallback = null;
 
 const baseApiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, '');
 
-const wsUrl = baseApiUrl.replace(/^https?:\/\//, (match) =>
-  match === 'https://' ? 'wss://' : 'ws://'
-);
+const wsProtocol = baseApiUrl.startsWith('https://') ? 'wss://' : 'ws://';
+const host = baseApiUrl.replace(/^https?:\/\//, '');
+const wsUrl = `${wsProtocol}${host}`;
 
 export const connectVideoSocket = (currentUserId) => {
   if (!currentUserId) {
@@ -18,7 +18,7 @@ export const connectVideoSocket = (currentUserId) => {
     return;
   }
 
-  socket = new WebSocket(`${wsUrl}/ws/video-call/`);  
+  socket = new WebSocket(`${wsUrl}/ws/video-call/`);
 
   socket.onopen = () => {
     console.log(`[Video Socket] Connected as user ${currentUserId}`);

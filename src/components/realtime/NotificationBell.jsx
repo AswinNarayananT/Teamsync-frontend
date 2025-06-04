@@ -22,15 +22,12 @@ useEffect(() => {
 
   const delay = setTimeout(() => {
     console.log('✅ Creating new WebSocket for user:', user.email);
-    const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); 
-    const baseURL = apiUrl.replace(/^https?:\/\//, (match) =>
-      match === 'https://' ? 'wss://' : 'ws://'
-    );
 
-    const socket = new WebSocket(`${baseURL}/ws/notifications/`);
+    const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+    const wsProtocol = apiUrl.startsWith('https://') ? 'wss://' : 'ws://';
+    const host = apiUrl.replace(/^https?:\/\//, '');
+    const socket = new WebSocket(`${wsProtocol}${host}/ws/notifications/`);
     socketRef.current = socket;
-
-
 
     socket.onopen = () => {
       console.log('🔔 WebSocket connected');
@@ -71,6 +68,7 @@ useEffect(() => {
     }
   };
 }, [user]);
+
 
 
 
