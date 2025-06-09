@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import { Button, Box, Typography, Stack } from "@mui/material";
 
-// Set the worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = "/node_modules/pdfjs-dist/build/pdf.worker.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.mjs";
 
 const PdfViewer = ({ pdfUrl }) => {
   const canvasRef = useRef(null);
@@ -50,11 +49,9 @@ const PdfViewer = ({ pdfUrl }) => {
 
       const viewport = page.getViewport({ scale });
 
-      // Set canvas buffer size
       canvas.width = viewport.width;
       canvas.height = viewport.height;
 
-      // Set canvas *style* size to match buffer size exactly
       canvas.style.width = `${viewport.width}px`;
       canvas.style.height = `${viewport.height}px`;
 
@@ -97,7 +94,7 @@ const PdfViewer = ({ pdfUrl }) => {
           ref={canvasRef}
           style={{
             border: "1px solid #ccc",
-            display: "block",  // Prevents scrollbars and scaling
+            display: "block",  
             margin: "0 auto"
           }}
         />

@@ -18,19 +18,13 @@ export default function Chat() {
   
 
 
-   const { unreadCounts, lastMessages, onlineStatus } = usePresenceSocket(
+   const { unreadCounts, lastMessages, onlineStatus,socket } = usePresenceSocket(
     currentUser?.id,
     currentWorkspace?.id
   );
 
 
   const [localUnreadCounts, setLocalUnreadCounts] = useState({});
-
-  useEffect(() => {
-    setLocalUnreadCounts(unreadCounts);
-  }, [unreadCounts]);
-
-
 
   const containerRef = useRef(null);
   const socketRef = useRef(null);
@@ -55,6 +49,10 @@ export default function Chat() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+    useEffect(() => {
+    setLocalUnreadCounts(unreadCounts);
+  }, [unreadCounts]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -81,15 +79,12 @@ useEffect(() => {
         socketRef.current = null;
       }
 
-      const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, ''); // Remove trailing slash
+      const apiUrl = import.meta.env.VITE_API_URL.replace(/\/$/, '');
 
-      // Determine ws protocol with '://'
       const wsProtocol = apiUrl.startsWith('https://') ? 'wss://' : 'ws://';
 
-      // Remove http(s) protocol from apiUrl to get host + path
       const host = apiUrl.replace(/^https?:\/\//, '');
 
-      // Construct full WebSocket URL
       const chatUrl = `${wsProtocol}${host}/ws/chat/${currentWorkspace.id}/${selectedUser.user_id}/`;
 
       ws = new WebSocket(chatUrl);
@@ -102,6 +97,8 @@ useEffect(() => {
 
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
+        console.log("%c[WebSocket Event]", "color: cyan; font-weight: bold;", data);
 
         if (data.type === 'chat_message') {
           setMessages((prev) => ({
@@ -118,19 +115,34 @@ useEffect(() => {
             ...prev,
             [selectedUser.user_id]: data.messages,
           }));
-        } else if (data.type === 'read_update') {
+        } else if (data.type === 'read_update' ) {
           const { message_ids } = data;
+
           setMessages((prev) => {
             const updated = { ...prev };
-            const updatedMessages = updated[selectedUser.user_id]?.map((msg) =>
-              message_ids.includes(msg.id) ? { ...msg, is_read: true } : msg
-            );
-            return {
-              ...updated,
-              [selectedUser.user_id]: updatedMessages,
-            };
+            Object.keys(updated).forEach((userId) => {
+              updated[userId] = updated[userId].map((msg) => {
+                if (message_ids.includes(msg.id)) {
+                  console.log(`Marking message ${msg.id} as read`);
+                  return { ...msg, is_read: true };
+                }
+                return msg;
+              });
+            });
+            return updated;
           });
-        }
+        }else if (data.type === 'delivery_update_event') {
+        // Handle delivery status updates explicitly
+        setMessages((prev) => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach((userId) => {
+                updated[userId] = updated[userId].map((msg) =>
+                    msg.id === data.message_id ? { ...msg, is_delivered: true } : msg
+                );
+            });
+            return updated;
+        });
+    }
       };
 
       ws.onclose = () => console.log('WebSocket disconnected');
@@ -154,12 +166,26 @@ useEffect(() => {
 
 
 
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selectedUser]);
 
-  useEffect(() => {
-    if (!containerRef.current || !socketRef.current || !chatMessages.length) return;
+   useEffect(() => {
+    if (selectedUser && socket) {
+      socket.markMessagesAsRead(selectedUser.user_id);
+    }
+  }, [selectedUser, socket]);
+
+  
+useEffect(() => {
+  const timer = setTimeout(() => {
+    console.log("IntersectionObserver setup triggered");
+
+    if (!containerRef.current || !socketRef.current || !chatMessages.length) {
+      console.log("❌ Missing deps: containerRef, socketRef, or chatMessages");
+      return;
+    }
 
     const ws = socketRef.current;
 
@@ -171,21 +197,27 @@ useEffect(() => {
             const msg = chatMessages.find((m) => m.id.toString() === messageId);
 
             if (msg && msg.receiver === currentUser.id && !msg.is_read) {
+              console.log("✅ Sending mark_read for message ID", msg.id);
               ws.send(JSON.stringify({ type: 'mark_read', message_ids: [msg.id] }));
             }
           }
         });
       },
-      { threshold: 1.0 }
+      { threshold: 0.5 } // Less strict for better visibility
     );
 
     const elements = containerRef.current.querySelectorAll('.chat-message');
+    console.log("🔍 Observing", elements.length, "message elements");
     elements.forEach((el) => observer.observe(el));
 
     return () => {
       elements.forEach((el) => observer.unobserve(el));
     };
-  }, [chatMessages, currentUser?.id]);
+  }, 100); // delay to wait for DOM
+
+  return () => clearTimeout(timer);
+}, [chatMessages, currentUser?.id]);
+
 
   useEffect(() => {
     if (selectedUser?.user_id && localUnreadCounts[selectedUser.user_id]) {
@@ -280,9 +312,6 @@ useEffect(() => {
                 </div>
               )}
 
-              {isOnline && (
-                <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 border-2 border-[#1f2c34] rounded-full" />
-              )}
             </div>
 
             <div className="flex flex-col flex-1 min-w-0">

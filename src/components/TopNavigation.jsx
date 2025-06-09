@@ -25,12 +25,13 @@ const TopNavigation = ({ role }) => {
     navigate("/login");
   };
 
- useEffect(() => {
+useEffect(() => {
   if (!user?.id) return;
 
   connectVideoSocket(user.id);
 
   onIncomingCall((data) => {
+    if (data.from_user_id === user.id) return;
     setIncomingCall(data);
   });
 
@@ -40,12 +41,20 @@ const TopNavigation = ({ role }) => {
   };
 }, [user]);
 
- const handleAccept = () => {
+
+const handleAccept = async () => {
+  if (window.zegoInstance && typeof window.zegoInstance.destroy === 'function') {
+    await window.zegoInstance.destroy();
+    window.zegoInstance = null;
+  }
+  
   if (incomingCall?.room_id) {
     setRoomID(incomingCall.room_id);
   }
+
   setIncomingCall(null);
 };
+
 
 
 const handleDecline = () => {

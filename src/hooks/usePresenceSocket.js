@@ -14,6 +14,7 @@ const usePresenceSocket = (userId, workspaceId) => {
       userId,
       workspaceId,
 
+      // Callback for presence status updates
       (user_id, isOnline) => {
         setOnlineStatus((prevStatus) => ({
           ...prevStatus,
@@ -21,22 +22,35 @@ const usePresenceSocket = (userId, workspaceId) => {
         }));
       },
 
-      ({ lastMessages, unreadCounts }) => {
+      // Callback for unread summary and chat message updates
+      ({ lastMessages: newLastMessages, unreadCounts: newUnreadCounts }) => {
         console.log("📬 Chat Summary Received:");
-        console.log("🕒 Last Messages:", lastMessages);
-        console.log("🔢 Unread Counts:", unreadCounts);
+        console.log("🕒 Last Messages:", newLastMessages);
+        console.log("🔢 Unread Counts:", newUnreadCounts);
 
-        setLastMessages(lastMessages);
-        setUnreadCounts(unreadCounts);
+        // Only update state if there are actual changes to avoid unnecessary rerenders
+        setLastMessages((prev) => {
+          const changed = JSON.stringify(prev) !== JSON.stringify(newLastMessages);
+          return changed ? newLastMessages : prev;
+        });
+
+        setUnreadCounts((prev) => {
+          const changed = JSON.stringify(prev) !== JSON.stringify(newUnreadCounts);
+          return changed ? newUnreadCounts : prev;
+        });
       }
     );
 
     socketManager.connect();
     socketRef.current = socketManager;
 
+    // Debug connection
+    console.log("🔌 PresenceSocketManager connected");
+
     return () => {
       socketManager.disconnect();
       socketRef.current = null;
+      console.log("🔌 PresenceSocketManager disconnected");
     };
   }, [userId, workspaceId]);
 
@@ -44,7 +58,7 @@ const usePresenceSocket = (userId, workspaceId) => {
     unreadCounts,
     lastMessages,
     onlineStatus,
-    socket: socketRef.current, 
+    socket: socketRef.current,
   };
 };
 
