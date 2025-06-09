@@ -6,46 +6,79 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AF19FF"];
+const COLORS = ["#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#AF19FF"];
 
-const darkStyles = {
+const styles = {
   page: {
-    padding: 20,
-    fontFamily: "Arial, sans-serif",
     backgroundColor: "#121212",
     color: "#e0e0e0",
     minHeight: "100vh",
+    padding: "20px",
+    fontFamily: "Segoe UI, sans-serif",
   },
-  table: {
-    width: "100%",
-    marginBottom: 40,
-    borderCollapse: "collapse",
+  header: {
+    fontSize: "2rem",
+    fontWeight: "bold",
+    marginBottom: "20px",
+    color: "#bb86fc",
   },
-  th: {
-    borderBottom: "2px solid #444",
-    padding: "8px",
-    textAlign: "left",
+  revenueContainer: {
+    display: "flex",
+    gap: "20px",
+    marginBottom: "30px",
+    flexWrap: "wrap",
+  },
+  revenueBox: {
+    flex: "1",
+    minWidth: "200px",
+    padding: "20px",
+    backgroundColor: "#1f1f1f",
+    borderRadius: "12px",
+    boxShadow: "0 2px 5px rgba(0,0,0,0.4)",
+    textAlign: "center",
+  },
+  revenueLabel: {
+    fontSize: "1.1rem",
+    marginBottom: "10px",
+    color: "#aaaaaa",
+  },
+  revenueValue: {
+    fontSize: "1.8rem",
+    fontWeight: "bold",
+    color: "#03dac6",
+  },
+  planGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "20px",
+    marginBottom: "40px",
+  },
+  planCard: {
     backgroundColor: "#1e1e1e",
+    padding: "16px",
+    borderRadius: "10px",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
+  },
+  planTitle: {
+    fontSize: "1.2rem",
+    fontWeight: "bold",
+    marginBottom: "10px",
     color: "#bb86fc",
   },
-  td: {
-    borderBottom: "1px solid #333",
-    padding: "8px",
+  chartSection: {
+    display: "flex",
+    gap: "30px",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
   },
-  trHover: {
-    backgroundColor: "#2a2a2a",
-  },
-  heading1: {
-    color: "#bb86fc",
-  },
-  heading2: {
-    color: "#bb86fc",
-    marginTop: 40,
-    marginBottom: 10,
-  },
-  heading3: {
-    color: "#bb86fc",
-    marginBottom: 10,
+  chartBox: {
+    backgroundColor: "#1f1f1f",
+    borderRadius: "12px",
+    padding: "20px",
+    width: "100%",
+    maxWidth: "600px",
+    height: "350px",
+    marginBottom: "40px",
   },
 };
 
@@ -68,98 +101,78 @@ export default function AdminDashboard() {
       });
   }, [dispatch]);
 
-  if (loading) return <p>Loading dashboard...</p>;
+  if (loading) return <p style={styles.page}>Loading dashboard...</p>;
   if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
   if (!stats || stats.length === 0) return <p>No data found</p>;
 
-  // Prepare bar chart data (monthly, weekly, yearly revenue)
+  // Total revenue
+  const totalRevenue = stats.reduce((sum, plan) => sum + (plan.total_revenue ?? 0), 0);
+  const monthlyRevenue = stats.reduce((sum, plan) => sum + (plan.monthly_revenue ?? 0), 0);
+  const weeklyRevenue = stats.reduce((sum, plan) => sum + (plan.weekly_revenue ?? 0), 0);
+
+  const pieData = stats.map((plan, idx) => ({
+    name: plan.name,
+    value: plan.active_subscriptions ?? 0,
+    color: COLORS[idx % COLORS.length],
+  }));
+
   const barData = stats.map((plan) => ({
     name: plan.name,
     Monthly: plan.monthly_revenue ?? 0,
-    Yearly: plan.yearly_revenue ?? 0,
     Weekly: plan.weekly_revenue ?? 0,
-  }));
-
-  // Prepare pie chart data for active subscriptions count
-  const pieDataSubs = stats.map((plan, index) => ({
-    name: plan.name,
-    value: plan.active_subscriptions ?? 0,
-    color: COLORS[index % COLORS.length],
+    Yearly: plan.yearly_revenue ?? 0,
   }));
 
   return (
-    <div style={darkStyles.page}>
-      <h1 style={darkStyles.heading1}>Admin Dashboard</h1>
+    <div style={styles.page}>
+      <h1 style={styles.header}>📊 Admin Dashboard</h1>
 
-      <section>
-        <h2 style={darkStyles.heading2}>Plans Summary</h2>
-        <table style={darkStyles.table}>
-          <thead>
-            <tr>
-              <th style={darkStyles.th}>Plan Name</th>
-              <th style={darkStyles.th}>Active Subscriptions</th>
-              <th style={darkStyles.th}>Active Workspaces</th>
-              <th style={darkStyles.th}>Blocked Workspaces</th>
-              <th style={darkStyles.th}>Expired Workspaces</th>
-              <th style={darkStyles.th}>Revenue (Monthly)</th>
-              <th style={darkStyles.th}>Revenue (Weekly)</th>
-              <th style={darkStyles.th}>Revenue (Yearly)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.map((plan) => (
-              <tr
-                key={plan.id}
-                style={{ cursor: "default" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = darkStyles.trHover.backgroundColor)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
-              >
-                <td style={darkStyles.td}>{plan.name}</td>
-                <td style={darkStyles.td}>{plan.active_subscriptions ?? 0}</td>
-                <td style={darkStyles.td}>{plan.active_workspaces ?? 0}</td>
-                <td style={darkStyles.td}>{plan.blocked_workspaces ?? 0}</td>
-                <td style={darkStyles.td}>{plan.expired_workspaces ?? 0}</td>
-                <td style={darkStyles.td}>
-                  ${Number(plan.monthly_revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
-                <td style={darkStyles.td}>
-                  ${Number(plan.weekly_revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
-                <td style={darkStyles.td}>
-                  ${Number(plan.yearly_revenue ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {/* Revenue Overview */}
+      <div style={styles.revenueContainer}>
+        <div style={styles.revenueBox}>
+          <div style={styles.revenueLabel}>Total Revenue</div>
+          <div style={styles.revenueValue}>${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+        </div>
+        <div style={styles.revenueBox}>
+          <div style={styles.revenueLabel}>Monthly Revenue</div>
+          <div style={styles.revenueValue}>${monthlyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+        </div>
+        <div style={styles.revenueBox}>
+          <div style={styles.revenueLabel}>Weekly Revenue</div>
+          <div style={styles.revenueValue}>${weeklyRevenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+        </div>
+      </div>
 
-      <section
-        style={{
-          display: "flex",
-          justifyContent: "space-around",
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ width: "45%", minWidth: 300, height: 300 }}>
-          <h3 style={darkStyles.heading3}>Subscription Counts by Plan</h3>
-          <ResponsiveContainer width="100%" height="100%">
+      {/* Plan Details */}
+      <div style={styles.planGrid}>
+        {stats.map((plan) => (
+          <div key={plan.id} style={styles.planCard}>
+            <div style={styles.planTitle}>{plan.name}</div>
+            <div>💼 Active Workspaces: {plan.active_workspaces}</div>
+            <div>🚫 Blocked: {plan.blocked_workspaces}</div>
+            <div>⏳ Expired: {plan.expired_workspaces}</div>
+            <div>📈 Active Subs: {plan.active_subscriptions}</div>
+            <div>💵 Revenue: ${plan.total_revenue.toFixed(2)}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Charts */}
+      <div style={styles.chartSection}>
+        <div style={styles.chartBox}>
+          <h3 style={{ color: "#bb86fc", marginBottom: 10 }}>🧾 Active Subscriptions (Pie)</h3>
+          <ResponsiveContainer width="100%" height="90%">
             <PieChart>
               <Pie
-                data={pieDataSubs}
+                data={pieData}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                fill="#8884d8"
                 label
               >
-                {pieDataSubs.map((entry, index) => (
+                {pieData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -167,49 +180,29 @@ export default function AdminDashboard() {
                 contentStyle={{ backgroundColor: "#222", borderColor: "#444" }}
                 itemStyle={{ color: "#eee" }}
               />
-              <Legend
-                wrapperStyle={{ color: "#eee" }}
-                iconType="circle"
-                iconSize={10}
-              />
+              <Legend wrapperStyle={{ color: "#eee" }} iconType="circle" iconSize={10} />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        <div style={{ width: "45%", minWidth: 300, height: 300 }}>
-          <h3 style={darkStyles.heading3}>Revenue by Plan ($)</h3>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={barData}
-              margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-            >
-              <XAxis
-                dataKey="name"
-                stroke="#bbb"
-                tick={{ fill: "#ccc" }}
-                tickLine={{ stroke: "#555" }}
-              />
-              <YAxis
-                stroke="#bbb"
-                tick={{ fill: "#ccc" }}
-                tickLine={{ stroke: "#555" }}
-              />
+        <div style={styles.chartBox}>
+          <h3 style={{ color: "#bb86fc", marginBottom: 10 }}>💰 Revenue by Plan</h3>
+          <ResponsiveContainer width="100%" height="90%">
+            <BarChart data={barData}>
+              <XAxis dataKey="name" stroke="#bbb" tick={{ fill: "#ccc" }} />
+              <YAxis stroke="#bbb" tick={{ fill: "#ccc" }} />
               <Tooltip
                 contentStyle={{ backgroundColor: "#222", borderColor: "#444" }}
                 itemStyle={{ color: "#eee" }}
               />
-              <Legend
-                wrapperStyle={{ color: "#eee" }}
-                iconType="square"
-                iconSize={10}
-              />
+              <Legend wrapperStyle={{ color: "#eee" }} />
               <Bar dataKey="Monthly" fill="#8884d8" />
-              <Bar dataKey="Weekly" fill="#82ca9d" />
-              <Bar dataKey="Yearly" fill="#ffc658" />
+              <Bar dataKey="Weekly" fill="#00C49F" />
+              <Bar dataKey="Yearly" fill="#FFBB28" />
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

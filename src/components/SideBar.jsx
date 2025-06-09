@@ -11,8 +11,8 @@ const Sidebar = ({ role, collapsed, setCollapsed }) => {
         { icon: "dashboard", text: "Dashboard", path: "/adminpanel" },
         { icon: "workspaces", text: "Workspaces", path: "/adminpanel/workspaces" },
         { icon: "plans", text: "Plans", path: "/adminpanel/plans" },
-        { icon: "reports", text: "Reports", path: "/adminpanel/reports" },
-        { icon: "settings", text: "Settings", path: "/adminpanel/settings" },
+        // { icon: "reports", text: "Reports", path: "/adminpanel/reports" },
+        // { icon: "settings", text: "Settings", path: "/adminpanel/settings" },
       ]
     : [
         { icon: "dashboard", text: "Dashboard", path: "/dashboard" },
