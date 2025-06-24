@@ -19,7 +19,6 @@ const Layout = ({ role, activeSection, setActiveSection, children }) => {
     <div className="min-h-screen bg-[#121214] relative overflow-hidden">
       <Sidebar role={role} collapsed={collapsed} setCollapsed={setCollapsed} />
 
-      {/* Main content shifts based on sidebar width */}
       <div className={`transition-all duration-300 ${collapsed ? 'ml-16' : 'ml-64'}`}>
         <TopNavigation role={role} />
         <div className="p-6">{children}</div>

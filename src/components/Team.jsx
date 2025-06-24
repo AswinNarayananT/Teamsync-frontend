@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchWorkspaceMembers,removeWorkspaceMember } from "../redux/currentworkspace/currentWorkspaceThunk";
+import { fetchWorkspaceMembers, removeWorkspaceMember } from "../redux/currentworkspace/currentWorkspaceThunk";
 import api from "../api";
 import { toast } from "react-toastify";
 import {
@@ -12,7 +12,6 @@ import {
   Button
 } from "@mui/material";
 
-
 const MAX_INVITES = 6;
 
 const Team = () => {
@@ -20,6 +19,7 @@ const Team = () => {
   const { currentWorkspace, members, membersLoading, membersError } = useSelector(
     (state) => state.currentWorkspace
   );
+  const { user } = useSelector((state) => state.auth); // Assuming you have current user in auth state
 
   const [invites, setInvites] = useState([{ email: "", fullName: "", role: "" }]);
   const [loading, setLoading] = useState(false);
@@ -28,6 +28,12 @@ const Team = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
 
+  // Check if current user is the owner
+  const isOwner = React.useMemo(() => {
+    if (!members || !user) return false;
+    const currentUserMember = members.find(member => member.user_id === user.id || member.user_email === user.email);
+    return currentUserMember?.role === "owner";
+  }, [members, user]);
 
   // Fetch workspace data
   useEffect(() => {
@@ -133,13 +139,11 @@ const Team = () => {
     }
   };
   
-  
   const roleColors = {
     owner: "bg-blue-600",
     manager: "bg-purple-600",
     developer: "bg-green-600",
     designer: "bg-pink-600",
-
   };
 
   return (
@@ -148,80 +152,83 @@ const Team = () => {
         <h1 className="text-3xl font-bold">Team Members</h1>
       </div>
 
-      {/* Invite New Members */}
-      <div className="bg-[#1E1E24] rounded-lg p-6 mb-8 shadow-lg">
-        <h2 className="text-xl font-semibold mb-4">Invite Members</h2>
-        <p className="text-gray-400 mb-6">Add up to {MAX_INVITES} members.</p>
-        
-        {invites.map((invite, index) => (
-          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <input
-              type="email"
-              placeholder="Email"
-              value={invite.email}
-              onChange={(e) => handleChange(index, "email", e.target.value)}
-              className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="Full Name"
-              value={invite.fullName}
-              onChange={(e) => handleChange(index, "fullName", e.target.value)}
-              className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
-            />
-            <div className="flex space-x-2">
-              <select
-                value={invite.role || roleOptions[0]?.value || ""}
-                onChange={(e) => handleChange(index, "role", e.target.value)}
-                className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 flex-1 focus:border-blue-500 focus:outline-none transition-colors"
-              >
-                {roleOptions.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </select>
-              {invites.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemoveRow(index)}
-                  className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
-                  aria-label="Remove row"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-        
-        <div className="flex justify-between mt-6">
-          <button
-            type="button"
-            onClick={handleAddRow}
-            disabled={invites.length >= MAX_INVITES}
-            className={`px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              invites.length >= MAX_INVITES
-                ? "bg-gray-600 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            }`}
-          >
-            Add Another
-          </button>
+      {/* Invite New Members - Only show for owners */}
+      {isOwner && (
+        <div className="bg-[#1E1E24] rounded-lg p-6 mb-8 shadow-lg">
+          <h2 className="text-xl font-semibold mb-4">Invite Members</h2>
+          <p className="text-gray-400 mb-6">Add up to {MAX_INVITES} members.</p>
           
-          <button
-            className={`px-6 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 ${
-              loading
-                ? "bg-green-700 cursor-wait"
-                : "bg-green-600 hover:bg-green-700"
-            }`}
-            onClick={handleSendInvitation}
-            disabled={loading}
-          >
-            {loading ? "Sending..." : "Send Invitation"}
-          </button>
+          {invites.map((invite, index) => (
+            <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <input
+                type="email"
+                placeholder="Email"
+                value={invite.email}
+                onChange={(e) => handleChange(index, "email", e.target.value)}
+                className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
+              />
+              <input
+                type="text"
+                placeholder="Full Name"
+                value={invite.fullName}
+                onChange={(e) => handleChange(index, "fullName", e.target.value)}
+                className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 focus:border-blue-500 focus:outline-none transition-colors"
+              />
+              <div className="flex space-x-2">
+                <select
+                  value={invite.role || roleOptions[0]?.value || ""}
+                  onChange={(e) => handleChange(index, "role", e.target.value)}
+                  className="bg-gray-800 rounded-md px-3 py-2 border border-gray-700 flex-1 focus:border-blue-500 focus:outline-none transition-colors"
+                >
+                  {roleOptions.map((role) => (
+                    <option key={role.value} value={role.value}>
+                      {role.label}
+                    </option>
+                  ))}
+                </select>
+                {invites.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveRow(index)}
+                    className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+                    aria-label="Remove row"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+          
+          <div className="flex justify-between mt-6">
+            <button
+              type="button"
+              onClick={handleAddRow}
+              disabled={invites.length >= MAX_INVITES}
+              className={`px-4 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                invites.length >= MAX_INVITES
+                  ? "bg-gray-600 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              Add Another
+            </button>
+            
+            <button
+              className={`px-6 py-2 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 ${
+                loading
+                  ? "bg-green-700 cursor-wait"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+              onClick={handleSendInvitation}
+              disabled={loading}
+            >
+              {loading ? "Sending..." : "Send Invitation"}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
 
       {/* Existing Team Members List */}
       <div className="bg-[#1E1E24] rounded-lg p-6 shadow-lg">
@@ -244,8 +251,7 @@ const Team = () => {
                   <th className="p-3 border-b border-gray-700">Name</th>
                   <th className="p-3 border-b border-gray-700">Role</th>
                   <th className="p-3 border-b border-gray-700">Join Date</th>
-                  {/* <th className="p-3 border-b border-gray-700">Status</th> */}
-                  <th className="p-3 border-b border-gray-700">Action</th>
+                  { isOwner && <th className="p-3 border-b border-gray-700">Action</th>}
                 </tr>
               </thead>
 
@@ -269,38 +275,26 @@ const Team = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                    <span
-                      className={`px-2 py-1 rounded text-xs ${
-                        roleColors[member.role] || "bg-gray-600"
-                      }`}
-                    >
-                      {member.role}
-                    </span>
+                      <span
+                        className={`px-2 py-1 rounded text-xs ${
+                          roleColors[member.role] || "bg-gray-600"
+                        }`}
+                      >
+                        {member.role}
+                      </span>
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex flex-wrap gap-1">
-                      {new Date(member.joined_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                        {new Date(member.joined_at).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </div>
                     </td>
-                    {/* <td className="py-3 px-4">
-                      {member.is_active ? (
-                        <span className="text-green-400 text-sm flex items-center">
-                          <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                          Active
-                        </span>
-                      ) : (
-                        <span className="text-yellow-400 text-sm flex items-center">
-                          <span className="w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
-                          Inactive
-                        </span>
-                      )}
-                    </td> */}
-                   {member.role !== "owner" && (
-                        <td className="py-3 px-4">
+                  {isOwner && (
+                      <td className="py-3 px-4">
+                        {member.role !== "owner" ? (
                           <button 
                             onClick={() => {
                               setSelectedMemberId(member.id);
@@ -310,36 +304,11 @@ const Team = () => {
                           >
                             Remove
                           </button>
-                        </td>
-                      )}
-
-                      <Dialog
-                          open={openDialog}
-                          onClose={() => setOpenDialog(false)}
-                        >
-                          <DialogTitle>Confirm Removal</DialogTitle>
-                          <DialogContent>
-                            <DialogContentText>
-                              Are you sure you want to remove this member from the workspace?
-                            </DialogContentText>
-                          </DialogContent>
-                          <DialogActions>
-                            <Button onClick={() => setOpenDialog(false)} color="inherit">
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={() => {
-                                handleRemove(selectedMemberId);
-                                setOpenDialog(false);
-                              }}
-                              color="error"
-                              variant="contained"
-                            >
-                              Remove
-                            </Button>
-                          </DialogActions>
-                        </Dialog>
-
+                        ) : (
+                          <span className="text-gray-500 text-sm">—</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -351,6 +320,34 @@ const Team = () => {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={openDialog}
+        onClose={() => setOpenDialog(false)}
+      >
+        <DialogTitle>Confirm Removal</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to remove this member from the workspace?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              handleRemove(selectedMemberId);
+              setOpenDialog(false);
+            }}
+            color="error"
+            variant="contained"
+          >
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   );
 };

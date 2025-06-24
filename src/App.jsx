@@ -27,7 +27,7 @@ import Chat from "./components/realtime/Chat";
 import MeetingPage from "./components/realtime/Meeting";
 import JoinMeetingPage from "./components/realtime/VideoCallManager";
 import AdminDashboard from "./pages/AdminDashboard";
-
+import UpdateSubscription from "./pages/UpdateSubscription";
 
 function App() {
   return (
@@ -72,6 +72,7 @@ function App() {
           />  
         </Route>
           <Route path="/create-workspace" element={<CreateWorkspace />} />
+          <Route path="/subscription/update" element={<UpdateSubscription />} />
         </Route>
 
         {/* Admin Protected Routes */}

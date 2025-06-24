@@ -2,7 +2,6 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api";
 
 
-/** 🔹 Set Current Workspace & Fetch Members */
 export const setCurrentWorkspace = createAsyncThunk(
   "currentWorkspace/setCurrentWorkspace",
   async (workspace, { dispatch }) => {
@@ -53,17 +52,22 @@ export const fetchWorkspaceMembers = createAsyncThunk(
 
 
 
-  export const fetchWorkspaceStatus = createAsyncThunk(
-    "workspace/fetchWorkspaceStatus",
-    async (workspaceId, { rejectWithValue }) => {
-      try {
-        const res = await api.get(`/api/v1/workspace/${workspaceId}/status`);
-        return { id: workspaceId, is_active: res.data.is_active };
-      } catch (err) {
-        return rejectWithValue(err.response?.data?.message || "Error fetching status");
-      }
+export const fetchWorkspaceStatus = createAsyncThunk(
+  "workspace/fetchWorkspaceStatus",
+  async (workspaceId, { rejectWithValue }) => {
+    try {
+      const res = await api.get(`/api/v1/workspace/${workspaceId}/status`);
+      return {
+        id: workspaceId,
+        is_active: res.data.is_active,
+        is_blocked_by_admin: res.data.is_blocked_by_admin, 
+      };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || "Error fetching status");
     }
-  );
+  }
+);
+
 
   export const createProject = createAsyncThunk(
     "projects/createProject",
@@ -160,6 +164,21 @@ export const updateIssue = createAsyncThunk(
     }
   }
 );
+
+
+export const deleteIssue = createAsyncThunk(
+  'currentWorkspace/deleteIssue',
+  async ({ issueId }, thunkAPI) => {
+    try {
+      const res = await api.delete(`/api/v1/project/issue/${issueId}/delete/`);
+      return res.data.id; 
+    } catch (error) {
+      console.error('Error deleting issue:', error);
+      return thunkAPI.rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
 
 export const fetchIssueById = createAsyncThunk(
   'issue/fetchById',
@@ -340,7 +359,7 @@ async ({ issueId, status }, { rejectWithValue }) => {
     });
     return response.data;  
   } catch (error) {
-    return rejectWithValue(error.response?.data || error.message);
+    return rejectWithValue(error.response?.data.error || error.message);
   }
 }
 );
@@ -405,11 +424,23 @@ export const checkIssueStatus = createAsyncThunk(
 
 export const completeSprint = createAsyncThunk(
   "sprint/completeSprint",
-  async ({ sprintId, action }, { rejectWithValue }) => {
+  async ({ projectId, sprintId, action }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`/api/v1/project/sprints/${sprintId}/complete/`, {
+      const response = await api.post(`/api/v1/project/${projectId}/sprints/${sprintId}/complete/`, {
         action,
       });
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchCompletedSprintsWithIssues = createAsyncThunk(
+  "sprint/fetchCompletedSprintsWithIssues",
+  async ({ projectId }, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/api/v1/project/${projectId}/completed-sprints/`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);

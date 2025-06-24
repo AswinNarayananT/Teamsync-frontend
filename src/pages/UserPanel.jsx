@@ -47,7 +47,7 @@ const UserPanel = () => {
   useEffect(() => {
     if (!sessionId && !loading && workspacesFetched) {
       const isAtRoot = location.pathname === "/" || location.pathname === "/dashboard";
-  
+
       if (workspaces.length > 0 && isAtRoot) {
         navigate("/dashboard", { replace: true });
       } else if (workspaces.length === 0 && isAtRoot) {
@@ -61,8 +61,8 @@ const UserPanel = () => {
       dispatch(fetchWorkspaceStatus(currentWorkspace.id));
     }
   }, [dispatch, currentWorkspace?.id, location.pathname]);
-
   const isInactive = currentWorkspace && !currentWorkspace.is_active;
+  const isBlocked = currentWorkspace?.is_blocked_by_admin;
   const isOwner = currentWorkspace?.role === "owner";
 
   return (
@@ -76,12 +76,24 @@ const UserPanel = () => {
             </p>
             {isOwner && (
               <button
-                onClick={() => navigate("/pricing")}
+                onClick={() => navigate("/subscription/update")}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition w-full"
               >
                 Choose New Plan
               </button>
             )}
+          </div>
+        </div>
+      ) : isBlocked ? (
+        <div className="flex items-center justify-center min-h-[calc(100vh-64px)] px-4 sm:px-6 lg:px-8">
+          <div className="bg-gray-800 shadow-md p-6 sm:p-8 rounded-lg text-center w-full max-w-sm">
+            <h1 className="text-xl font-semibold text-red-600 mb-3">Workspace Suspended</h1>
+            <p className="text-gray-400 mb-4">
+              This workspace has been suspended or blocked by an administrator.
+            </p>
+            <p className="text-sm text-gray-500">
+              Please contact support or your administrator for more information.
+            </p>
           </div>
         </div>
       ) : (

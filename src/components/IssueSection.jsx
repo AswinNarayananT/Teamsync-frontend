@@ -158,10 +158,8 @@ function IssueSection({
         <div className="flex items-center gap-3 relative">
          {isSprintSection ? (
           sprint?.is_active ? (
-            // Use your reusable component here
             <CompleteSprintButton sprintId={sprint.id} disabled={false} />
           ) : (
-            // Keep the original button for "Start Sprint"
             <button
               onClick={handleStartOrCompleteSprint}
               disabled={!issues || issues.length === 0}
@@ -175,7 +173,6 @@ function IssueSection({
             </button>
           )
         ) : (
-          // For "Create Sprint"
           <button
             onClick={handleCreateSprint}
             className="text-sm px-3 py-1.5 rounded-xl text-white font-medium shadow-sm bg-blue-600 hover:bg-blue-700"
@@ -215,6 +212,15 @@ function IssueSection({
 
       {expanded && (
         <>
+          {/* Header Row */}
+         <div className="grid grid-cols-[1fr_1fr_1fr_1fr_auto] text-sm font-semibold text-gray-400 px-4 py-2 border-b border-gray-800">
+          <div className="col-span-1 pl-6">Title</div>
+          <div className="col-span-1 pl-3">Epic</div>
+          <div className="col-span-1 pl-8">Status</div>
+          <div className="col-span-1">Assignee</div>
+          <div className="col-span-1">Action</div>
+        </div>
+
           {/* Issue List */}
           <div className="divide-y divide-gray-800">
             {issues.length > 0 ? (

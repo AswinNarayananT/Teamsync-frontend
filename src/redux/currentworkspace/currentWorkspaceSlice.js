@@ -1,5 +1,30 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { setCurrentWorkspace, fetchWorkspaceMembers, fetchWorkspaceProjects, fetchWorkspaceStatus, setCurrentProject, fetchEpics, createProject, updateProject, deleteProject, createIssue, fetchProjectIssues, assignParentEpic, assignAssigneeToIssue, updateIssueStatus,updateIssue, removeWorkspaceMember, fetchSprintsInProject,fetchActiveSprintIssues,createSprintInProject,deleteSprint,editSprint,completeSprint } from "./currentWorkspaceThunk";
+import {
+  setCurrentWorkspace,
+  setCurrentProject,
+  fetchWorkspaceMembers,
+  fetchWorkspaceProjects,
+  fetchWorkspaceStatus,
+  fetchEpics,
+  fetchProjectIssues,
+  fetchSprintsInProject,
+  fetchActiveSprintIssues,
+  createProject,
+  updateProject,
+  deleteProject,
+  createIssue,
+  updateIssue,
+  deleteIssue,
+  assignParentEpic,
+  assignAssigneeToIssue,
+  updateIssueStatus,
+  createSprintInProject,
+  editSprint,
+  deleteSprint,
+  completeSprint,
+  removeWorkspaceMember,
+} from "./currentWorkspaceThunk";
+
 
 const initialState = {
   currentWorkspace: null,
@@ -60,12 +85,15 @@ const currentWorkspaceSlice = createSlice({
         const removedUserId = action.payload; 
         state.members = state.members.filter(member => member.id !== removedUserId);
       })      
+
        // 🔹 Fetch Workspace status
       .addCase(fetchWorkspaceStatus.fulfilled, (state, action) => {
         if (state.currentWorkspace && state.currentWorkspace.id === action.payload.id) {
           state.currentWorkspace.is_active = action.payload.is_active;
+          state.currentWorkspace.is_blocked_by_admin = action.payload.is_blocked_by_admin; 
         }
       })
+
 
       // 🔹 Fetch Workspace Projects
       .addCase(fetchWorkspaceProjects.pending, (state) => {
@@ -291,6 +319,13 @@ const currentWorkspaceSlice = createSlice({
             state.issues[index] = updatedIssue;
           }
         }
+      })
+      .addCase(deleteIssue.fulfilled, (state, action) => {
+        const deletedId = action.payload;
+
+        state.epics = state.epics.filter((epic) => epic.id !== deletedId);
+
+        state.issues = state.issues.filter((issue) => issue.id !== deletedId);
       });
   },
 });

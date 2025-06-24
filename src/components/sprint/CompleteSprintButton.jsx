@@ -19,6 +19,7 @@ import {
 import { MdCheckCircle } from "react-icons/md";
 import { IoClose } from "react-icons/io5";
 import { checkIssueStatus,completeSprint } from "../../redux/currentworkspace/currentWorkspaceThunk";
+import { toast } from "react-toastify";
 
 const CompleteSprintButton = ({ sprintId = null, disabled = false }) => {
   const [open, setOpen] = useState(false);
@@ -28,7 +29,7 @@ const CompleteSprintButton = ({ sprintId = null, disabled = false }) => {
 
   const dispatch = useDispatch();
   const theme = useTheme();
-
+  const project =useSelector((state)=>state.currentWorkspace.currentProject);
   const sprints = useSelector((state) => state.currentWorkspace.sprints);
   const activeSprints = sprints.filter((s) => s.is_active);
   const selectedSprint = activeSprints.find((s) => s.id === Number(selectedId));
@@ -75,14 +76,15 @@ const CompleteSprintButton = ({ sprintId = null, disabled = false }) => {
 
   const handleComplete = () => {
     if (!selectedId || (issueStatus?.incomplete_issues > 0 && !selectedAction)) return;
-    dispatch(completeSprint({ sprintId: selectedId, action: selectedAction }))
+    dispatch(completeSprint({ projectId:project.id, sprintId: selectedId, action: selectedAction }))
       .unwrap()
       .then((res) => {
         toast.success("Sprint completed successfully!");
         setOpen(false);
       })
       .catch((err) => {
-        toast.error("Failed to complete sprint");
+        console.log(err)
+        toast.error(err.detail)
       });
     setOpen(false);
   };

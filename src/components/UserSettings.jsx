@@ -398,10 +398,18 @@
                             </button>
                           )
                         ) : (
+                          <div className="flex flex-col gap-2">
                           <div className="text-xs text-gray-400 flex items-center font-medium">
                             <FaRegCalendarTimes className="mr-1.5 w-3 h-3" />
                             Plan canceled
                           </div>
+                          <button
+                            onClick={() => navigate("/subscription/update")}
+                            className="text-xs px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                          >
+                            Choose New Plan
+                          </button>
+                        </div>
                         )}
 
                         {/* Material UI Confirmation Modal */}

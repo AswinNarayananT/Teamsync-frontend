@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useDispatch } from "react-redux";
 import { updateIssueStatus } from "../../redux/currentworkspace/currentWorkspaceThunk";
+import { toast } from "react-toastify";
 
 export default function StatusDropdown({ issue }) {
   const dispatch = useDispatch();
@@ -13,8 +14,15 @@ export default function StatusDropdown({ issue }) {
   };
 
   const handleStatusChange = (issueId, status) => {
-    dispatch(updateIssueStatus({ issueId, status }));
-    setIsOpen(false); // close dropdown
+     dispatch(updateIssueStatus({ issueId, status }))
+    .unwrap()
+    .then(() => {
+      setIsOpen(false); 
+    })
+    .catch((error) => {
+      setIsOpen(false);
+      toast.error(error); 
+    });
   };
 
   // Detect click outside dropdown
