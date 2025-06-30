@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Layout from "../components/Layout";
 import { fetchWorkspaceStatus } from "../redux/currentworkspace/currentWorkspaceThunk";
+import { toast } from "react-toastify";
 
 const UserPanel = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -23,6 +24,7 @@ const UserPanel = () => {
         dispatch(fetchUserWorkspaces()).then((action) => {
           if (action.payload.length > 0) {
             clearInterval(interval);
+            toast.success("Payment successful, workspace created!");
             navigate("/dashboard");
           }
         });
@@ -61,6 +63,7 @@ const UserPanel = () => {
       dispatch(fetchWorkspaceStatus(currentWorkspace.id));
     }
   }, [dispatch, currentWorkspace?.id, location.pathname]);
+
   const isInactive = currentWorkspace && !currentWorkspace.is_active;
   const isBlocked = currentWorkspace?.is_blocked_by_admin;
   const isOwner = currentWorkspace?.role === "owner";
