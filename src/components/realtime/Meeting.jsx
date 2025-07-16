@@ -73,6 +73,7 @@ const MeetingPage = () => {
         try {
           const meetings = await dispatch(fetchUpcomingMeetings({ workspaceId })).unwrap();
           setUserMeetings(Array.isArray(meetings) ? meetings : []);
+
         } catch (error) {
           console.error('Failed to fetch meetings:', error);
           setUserMeetings([]);
@@ -119,41 +120,58 @@ const MeetingPage = () => {
 
       {/* Tab Content */}
       <div className="max-w-3xl mx-auto">
-        {/* Your Meetings */}
-        {activeTab === 'your' && (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-7">
-            <h3 className="text-2xl font-semibold mb-6 text-blue-700 dark:text-blue-400">
-              Your Meetings
-            </h3>
-            {userMeetings.length === 0 ? (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-16">
-                No scheduled meetings.
-              </p>
-            ) : (
-              <div className="space-y-5 max-h-[420px] overflow-y-auto pr-3 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200 dark:scrollbar-thumb-blue-700 dark:scrollbar-track-gray-700">
-                {userMeetings.map((m) => (
-                  <div
-                    key={m.id}
-                    className="border border-gray-300 dark:border-gray-700 rounded-lg p-4 bg-gray-100 dark:bg-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
-                    title="Click for details"
-                  >
-                    <div className="text-base font-medium text-gray-800 dark:text-gray-200">
-                      {m.start_time
-                        ? format(new Date(m.start_time), 'PPpp')
-                        : 'Date not available'}
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      <strong>With:</strong>{' '}
-                      {Array.isArray(m.participants) && m.participants.length > 0
-                        ? m.participants.map((p) => p.name || p.email || 'Unknown').join(', ')
-                        : 'No participants'}
-                    </div>
-                  </div>
-                ))}
+       {/* Your Meetings */}
+  {activeTab === 'your' && (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-7">
+      <h3 className="text-2xl font-semibold mb-6 text-blue-700 dark:text-blue-400">
+        Your Meetings
+      </h3>
+
+      {userMeetings.length === 0 ? (
+        <p className="text-gray-500 dark:text-gray-400 text-center py-16">
+          No scheduled meetings.
+        </p>
+      ) : (
+        <div className="space-y-5 max-h-[420px] overflow-y-auto pr-3 scrollbar-thin scrollbar-thumb-blue-500 scrollbar-track-gray-200 dark:scrollbar-thumb-blue-700 dark:scrollbar-track-gray-700">
+          {userMeetings.map((m) => (
+            <div
+              key={m.id}
+              className="border border-gray-300 dark:border-gray-700 rounded-lg p-5 bg-gray-100 dark:bg-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
+              title="Click for details"
+            >
+              {/* Date */}
+              <div className="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                {m.start_time ? format(new Date(m.start_time), 'PPpp') : 'Date not available'}
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Participants */}
+              <div className="mt-2">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                  <strong>Participants:</strong>
+                </p>
+
+                <div className="flex flex-wrap gap-2">
+                  {Array.isArray(m.participants) && m.participants.length > 0 ? (
+                    m.participants.map((p, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center px-3 py-1 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium shadow-sm"
+                      >
+                        {p.full_name ? p.full_name : "Unknown"}
+                        <span className="ml-1 text-gray-500 dark:text-gray-400">({p.email})</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">No participants</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )}
 
         {/* Schedule Meeting */}
         {activeTab === 'schedule' && (
