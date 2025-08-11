@@ -529,54 +529,6 @@
                 )}
               </div>
             </div>
-            
-            {/* Recent Activity */}
-            <div className="bg-gray-900 rounded-xl overflow-hidden shadow-lg border border-gray-800">
-              <div className="px-6 py-4 border-b border-gray-800">
-                <h3 className="font-semibold flex items-center">
-                  <FaHistory className="mr-2 text-blue-500" />
-                  Recent Activity
-                </h3>
-              </div>
-              
-              <div className="divide-y divide-gray-800">
-                <div className="px-6 py-4 flex items-start">
-                  <div className="w-8 h-8 rounded-full bg-blue-900 bg-opacity-30 flex items-center justify-center mr-3 mt-0.5">
-                    <FaFileAlt className="w-3.5 h-3.5 text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm">You updated the <span className="text-blue-400">Marketing Plan</span> document</p>
-                    <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
-                  </div>
-                </div>
-                
-                <div className="px-6 py-4 flex items-start">
-                  <div className="w-8 h-8 rounded-full bg-green-900 bg-opacity-30 flex items-center justify-center mr-3 mt-0.5">
-                    <FaUserPlus className="w-3.5 h-3.5 text-green-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm">You joined <span className="text-blue-400">Design Team</span> workspace</p>
-                    <p className="text-xs text-gray-500 mt-1">Yesterday</p>
-                  </div>
-                </div>
-                
-                <div className="px-6 py-4 flex items-start">
-                  <div className="w-8 h-8 rounded-full bg-purple-900 bg-opacity-30 flex items-center justify-center mr-3 mt-0.5">
-                    <FaCommentAlt className="w-3.5 h-3.5 text-purple-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm">You commented on <span className="text-blue-400">Project Timeline</span></p>
-                    <p className="text-xs text-gray-500 mt-1">3 days ago</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="px-6 py-3 border-t border-gray-800">
-                <button className="text-xs text-blue-400 hover:text-blue-300">
-                  View All Activity →
-                </button>
-              </div>
-            </div>
           </div>
         </div>
         
